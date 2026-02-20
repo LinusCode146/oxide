@@ -1,0 +1,10 @@
+let add = {
+    let a = 1;
+    let b = 2;
+    let c = a + b;
+}
+let sub = {
+    let x = 10;
+    let y = 5;
+    let z = x - y;
+}

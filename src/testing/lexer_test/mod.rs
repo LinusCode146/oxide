@@ -56,7 +56,7 @@ fn test_equality_operators() {
 
 #[test]
 fn test_file1_string_and_semicolons() {
-    let tokens = lex_file("src/testing/lexer_test/test1.coral");
+    let tokens = lex_file("src/testing/lexer_test/test1.oxide");
     assert!(tokens.contains(&TokenType::STRING("hello world".to_string())));
     assert!(tokens.contains(&TokenType::SEMICOLON));
     assert!(!tokens.contains(&TokenType::ILLEGAL));
@@ -64,7 +64,7 @@ fn test_file1_string_and_semicolons() {
 
 #[test]
 fn test_file2_arithmetic_expression() {
-    let tokens = lex_file("src/testing/lexer_test/test2.coral");
+    let tokens = lex_file("src/testing/lexer_test/test2.oxide");
     assert!(tokens.contains(&TokenType::PLUS));
     assert!(tokens.contains(&TokenType::MINUS));
     assert!(tokens.contains(&TokenType::MUL));
@@ -74,13 +74,13 @@ fn test_file2_arithmetic_expression() {
 
 #[test]
 fn test_file3_no_illegal_tokens() {
-    let tokens = lex_file("src/testing/lexer_test/test3.coral");
+    let tokens = lex_file("src/testing/lexer_test/test3.oxide");
     assert!(!tokens.contains(&TokenType::ILLEGAL));
 }
 
 #[test]
 fn test_file1_token_sequence() {
-    let tokens = lex_file("src/testing/lexer_test/test1.coral");
+    let tokens = lex_file("src/testing/lexer_test/test1.oxide");
     // verify let binding sequence appears somewhere in the token stream
     let windows = tokens.windows(3);
     let has_let_binding = windows.into_iter().any(|w| matches!(
@@ -92,7 +92,7 @@ fn test_file1_token_sequence() {
 
 #[test]
 fn test_file2_balanced_parens() {
-    let tokens = lex_file("src/testing/lexer_test/test2.coral");
+    let tokens = lex_file("src/testing/lexer_test/test2.oxide");
     let lparen_count = tokens.iter().filter(|t| **t == TokenType::LPAREN).count();
     let rparen_count = tokens.iter().filter(|t| **t == TokenType::RPAREN).count();
     assert_eq!(lparen_count, rparen_count, "Parentheses should be balanced");
@@ -100,7 +100,7 @@ fn test_file2_balanced_parens() {
 
 #[test]
 fn test_file3_balanced_braces() {
-    let tokens = lex_file("src/testing/lexer_test/test3.coral");
+    let tokens = lex_file("src/testing/lexer_test/test3.oxide");
     let lbrace_count = tokens.iter().filter(|t| **t == TokenType::LBRACE).count();
     let rbrace_count = tokens.iter().filter(|t| **t == TokenType::RBRACE).count();
     assert_eq!(lbrace_count, rbrace_count, "Braces should be balanced");
@@ -108,7 +108,7 @@ fn test_file3_balanced_braces() {
 
 #[test]
 fn test_file2_comparison_operators() {
-    let tokens = lex_file("src/testing/lexer_test/test2.coral");
+    let tokens = lex_file("src/testing/lexer_test/test2.oxide");
     assert!(
         tokens.contains(&TokenType::EQ) || tokens.contains(&TokenType::NEQ)
             || tokens.contains(&TokenType::GT) || tokens.contains(&TokenType::LT),

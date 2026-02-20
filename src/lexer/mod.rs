@@ -71,11 +71,7 @@ impl Lexer {
 
 
     fn peek_token(&self) -> Option<u8> {
-        if self.read_position < self.input.len() {
-            Some(self.input[self.read_position])
-        } else {
-            None
-        }
+        self.input.get(self.read_position).copied()
     }
 
     fn read_identifier(&mut self) -> Vec<u8> {

@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 #[derive(Clone, Debug, PartialEq)]
+#[derive(Eq, Hash)]
 pub enum TokenType {
     ILLEGAL,
     EOF,
@@ -81,4 +84,17 @@ impl TokenType {
             TokenType::RETURN => String::from("RETURN"),
         }
     }
+}
+
+pub fn lookup_keyword(ident: &str) -> TokenType {
+    let keywords = HashMap::from([
+        ("let", TokenType::LET),
+        ("fn", TokenType::FUNCTION),
+        ("true", TokenType::TRUE),
+        ("false", TokenType::FALSE),
+        ("if", TokenType::IF),
+        ("else", TokenType::ELSE),
+        ("return", TokenType::RETURN),
+    ]);
+    keywords.get(ident).cloned().unwrap_or(TokenType::IDENT(ident.to_string()))
 }

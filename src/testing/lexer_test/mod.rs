@@ -17,11 +17,12 @@ fn lex_file(filepath: &str) -> Vec<TokenType> {
 fn test_variable_assignment() {
     let tokens = lex_string("let five = 5;");
     assert_eq!(*tokens, vec![
-        TokenType::IDENT("let".to_string()),
+        TokenType::LET,
         TokenType::IDENT("five".to_string()),
         TokenType::ASSIGN,
         TokenType::INT("5".to_string()),
         TokenType::SEMICOLON,
+        TokenType::EOF
     ]);
 }
 
@@ -36,6 +37,7 @@ fn test_function_call() {
         TokenType::INT("4".to_string()),
         TokenType::RPAREN,
         TokenType::SEMICOLON,
+        TokenType::EOF
     ]);
 }
 
@@ -49,6 +51,7 @@ fn test_equality_operators() {
         TokenType::IDENT("x".to_string()),
         TokenType::NEQ,
         TokenType::IDENT("y".to_string()),
+        TokenType::EOF
     ]);
 }
 

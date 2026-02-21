@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fs;
-use super::token::{TokenType};
+use super::token::{lookup_keyword, TokenType};
 
 pub struct Lexer {
     input: Vec<u8>,
@@ -163,9 +163,10 @@ impl Lexer {
                 _ => {
                     if (self.ch as char).is_alphabetic() {
                         let ident = String::from_utf8(self.read_identifier()).unwrap();
-                        self.tokens.push(TokenType::IDENT(ident));
+                        let tok = lookup_keyword(&ident);
+                        self.tokens.push(tok);
                         self.skip_whitespaces();
-                        continue; // skip the read_char at the bottom
+                        continue;
                     } else if (self.ch as char).is_numeric() {
                         let num = String::from_utf8(self.read_number()).unwrap();
                         self.tokens.push(TokenType::INT(num));
@@ -181,5 +182,6 @@ impl Lexer {
             self.read_char();
             self.skip_whitespaces();
         }
+        self.tokens.push(TokenType::EOF);
     }
 }

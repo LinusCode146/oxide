@@ -1,3 +1,1 @@
-let name = "Pete";
-let second_name = "Walter";
-let third_name = "Franz";
+let sum = 5 + 5 / 1;

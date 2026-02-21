@@ -9,8 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
     parser.check_parser_errors();
-    program.string();
-
+    println!("{}", program.string());
     Ok(())
 }
 

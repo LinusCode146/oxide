@@ -30,6 +30,11 @@ pub struct Identifier {
     pub value: String
 }
 
+pub struct IntegerLiteral {
+    pub token: TokenType,
+    pub value: i64,
+}
+
 pub struct ReturnStatement {
     pub token: TokenType,
     pub return_value: Option<Box<dyn Expression>>,
@@ -38,6 +43,24 @@ pub struct ReturnStatement {
 pub struct ExpressionStatement {
     pub token: TokenType,
     pub expression: Option<Box<dyn Expression>>
+}
+
+pub struct PrefixExpression {
+    pub token: TokenType,
+    pub operator: String,
+    pub right: Option<Box<dyn Expression>>
+}
+
+pub struct InfixExpression {
+    pub token: TokenType,
+    pub left: Option<Box<dyn Expression>>,
+    pub operator: String,
+    pub right: Option<Box<dyn Expression>>
+}
+
+pub struct Boolean {
+    pub token: TokenType,
+    pub value: bool
 }
 
 impl Node for Program {
@@ -51,6 +74,35 @@ impl Node for Program {
     fn as_any(&self) -> &dyn Any { self }
     fn string(&self) -> String {
         self.statements.iter().map(|s| s.string()).collect()
+    }
+}
+
+impl Node for PrefixExpression {
+    fn token_literal(&self) -> String {
+        self.token.get_literal()
+    }
+    fn as_any(&self) -> &dyn Any { self }
+    fn string(&self) -> String {
+        format!("({}{})", self.operator, self.right.as_ref().map(|r| r.string()).unwrap_or_default())
+    }
+}
+
+impl Node for Boolean {
+    fn token_literal(&self) -> String {
+        self.token.get_literal()
+    }
+    fn as_any(&self) -> &dyn Any { self }
+    fn string(&self) -> String {
+        self.token.get_literal()
+    }
+}
+impl Node for InfixExpression {
+    fn token_literal(&self) -> String {
+        self.token.get_literal()
+    }
+    fn as_any(&self) -> &dyn Any { self }
+    fn string(&self) -> String {
+        format!("({} {} {})", self.left.as_ref().map(|r| r.string()).unwrap_or_default(), self.operator, self.right.as_ref().map(|r| r.string()).unwrap_or_default())
     }
 }
 
@@ -100,6 +152,16 @@ impl Statement for ReturnStatement {
     fn statement_node(&self) {}
 }
 
+impl Node for IntegerLiteral {
+    fn token_literal(&self) -> String {
+        self.token.get_literal()
+    }
+    fn as_any(&self) -> &dyn Any { self }
+    fn string(&self) -> String {
+        self.value.clone().to_string()
+    }
+}
+
 impl Node for Identifier {
     fn token_literal(&self) -> String {
         self.token.get_literal()
@@ -111,6 +173,22 @@ impl Node for Identifier {
 }
 
 impl Expression for Identifier {
+    fn expression_node(&self) {}
+}
+
+impl Expression for IntegerLiteral {
+    fn expression_node(&self) {}
+}
+
+impl Expression for PrefixExpression {
+    fn expression_node(&self) {}
+}
+
+impl Expression for InfixExpression {
+    fn expression_node(&self) {}
+}
+
+impl Expression for Boolean {
     fn expression_node(&self) {}
 }
 

@@ -155,10 +155,8 @@ impl Lexer {
                 }
                 b'!' => match self.peek_token() {
                     Some(b'=') => { self.read_char(); TokenType::NEQ },
-                    Some(b' ') | Some(b'\n') | Some(b'\t') | Some(b'\r') => TokenType::BANG,
-                    None => TokenType::BANG,
-                    Some(_) => TokenType::ILLEGAL,
-                }
+                    _ => TokenType::BANG,
+                },
 
                 _ => {
                     if (self.ch as char).is_alphabetic() {

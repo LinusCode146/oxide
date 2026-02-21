@@ -1,4 +1,4 @@
-use crate::ast::Node;
+use crate::ast::{ExpressionStatement, Identifier, Node};
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 
@@ -51,7 +51,6 @@ return 993322;";
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
     parser.check_parser_errors();
-    program.string();
 
     assert_eq!(program.statements.len(), 3);
 
@@ -59,4 +58,32 @@ return 993322;";
         assert_eq!(stmt.token_literal(), String::from("RETURN"))
     }
 
+}
+
+#[test]
+fn test_identifier_expression() {
+    let input = "foobar;";
+
+    let mut l = Lexer::from_str(input);
+    l.convert_to_tokens();
+    let mut parser = Parser::new(l);
+    let program = parser.parse_program();
+    parser.check_parser_errors();
+
+    assert_eq!(program.statements.len(), 1);
+
+    let stmt = program.statements[0]
+        .as_any()
+        .downcast_ref::<ExpressionStatement>()
+        .expect("Expected ExpressionStatement");
+
+    let ident = stmt.expression
+        .as_ref()
+        .expect("Expected expression")
+        .as_any()
+        .downcast_ref::<Identifier>()
+        .expect("Expected Identifier");
+
+    assert_eq!(ident.value, "foobar");
+    assert_eq!(ident.token_literal(), "foobar");
 }

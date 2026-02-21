@@ -1,10 +1,22 @@
 use std::collections::HashMap;
 use crate::lexer::Lexer;
 use crate::token::TokenType;
-use crate::ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement};
+use crate::ast::{Expression, ExpressionStatement, Identifier, LetStatement, Program, ReturnStatement, Statement};
 
-type PrefixParseFn = fn() -> dyn Expression;
-type InfixParseFn = fn(dyn Expression) -> dyn Expression;
+#[derive(PartialOrd, PartialEq)]
+#[allow(dead_code)]
+enum Precedence {
+    LOWEST,
+    EQUALS,       // ==
+    LESSGREATER,  // > or
+    SUM,          // +
+    PRODUCT,      // *
+    PREFIX,       // -X or !X
+    CALL,         // myFunction(X)
+}
+
+type PrefixParseFn = fn(&Parser) -> Box<dyn Expression>;
+type InfixParseFn = fn(&Parser, Box<dyn Expression>) -> Box<dyn Expression>;
 
 pub struct Parser {
     pos: usize,
@@ -30,6 +42,9 @@ impl Parser {
             infix_parse_fns: HashMap::new(),
         };
         p.next_token();
+
+        p.register_prefix(TokenType::IDENT(String::new()), Parser::parse_identifier);
+
         p
     }
 
@@ -110,8 +125,38 @@ impl Parser {
         match self.cur_token {
             TokenType::LET => self.parse_let_statement().map(|s| Box::new(s) as Box<dyn Statement>),
             TokenType::RETURN => self.parse_return_statement().map(|s| Box::new(s) as Box<dyn Statement>),
-            _ => None
+            _ => self.parse_expression_statement().map(|s| Box::new(s) as Box<dyn Statement>)
         }
+    }
+
+    fn parse_expression_statement(&mut self) -> Option<ExpressionStatement> {
+        let token = self.cur_token.clone();
+        let expression = self.parse_expression(Precedence::LOWEST);
+
+        if self.peek_token_is(&TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Some(ExpressionStatement { token, expression })
+    }
+
+    fn parse_expression(&self, _precedence: Precedence) -> Option<Box<dyn Expression>> {
+        println!("looking up prefix for: {:?}", self.cur_token);
+        println!("registered prefixes: {:?}", self.prefix_parse_fns.keys().collect::<Vec<_>>());
+
+        let prefix = self.prefix_parse_fns.iter().find(|(k, _)| {
+            std::mem::discriminant(*k) == std::mem::discriminant(&self.cur_token)
+        })?.1;
+
+        let left_expression = prefix(self);
+        Some(left_expression)
+    }
+
+    fn parse_identifier(p: &Parser) -> Box<dyn Expression> {
+        Box::new(Identifier {
+            token: p.cur_token.clone(),
+            value: p.cur_token.get_literal()
+        })
     }
 
     fn parse_return_statement(&mut self) -> Option<ReturnStatement> {

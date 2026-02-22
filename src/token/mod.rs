@@ -75,13 +75,13 @@ impl TokenType {
             TokenType::COLON => String::from(":"),
             TokenType::DOT => String::from("."),
 
-            TokenType::FUNCTION => String::from("FUNCTION"),
-            TokenType::LET => String::from("LET"),
-            TokenType::TRUE => String::from("TRUE"),
-            TokenType::FALSE => String::from("FALSE"),
-            TokenType::IF => String::from("IF"),
-            TokenType::ELSE => String::from("ELSE"),
-            TokenType::RETURN => String::from("RETURN"),
+            TokenType::FUNCTION => String::from("fun"),
+            TokenType::LET => String::from("let"),
+            TokenType::TRUE => String::from("true"),
+            TokenType::FALSE => String::from("false"),
+            TokenType::IF => String::from("if"),
+            TokenType::ELSE => String::from("else"),
+            TokenType::RETURN => String::from("return"),
         }
     }
 }

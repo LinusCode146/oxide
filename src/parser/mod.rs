@@ -1,11 +1,7 @@
 use crate::lexer::Lexer;
 use crate::token::TokenType;
-use crate::ast::{
-    BlockStatement, BooleanLiteral, Expression, ExpressionStatement, Identifier,
-    IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
-    Program, ReturnStatement, Statement,
-};
-
+use crate::ast::{BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement};
+use crate::parser::Precedence::Lowest;
 
 #[derive(PartialOrd, PartialEq, Clone, Copy)]
 pub enum Precedence {
@@ -24,7 +20,8 @@ fn token_precedence(t: &TokenType) -> Precedence {
         TokenType::LT | TokenType::GT               => Precedence::LessGreater,
         TokenType::PLUS | TokenType::MINUS          => Precedence::Sum,
         TokenType::MUL | TokenType::DIV             => Precedence::Product,
-        _                                           => Precedence::Lowest,
+        TokenType::LPAREN                           => Precedence::Call,
+        _                                           => Lowest,
     }
 }
 
@@ -132,7 +129,7 @@ impl Parser {
     fn peek_precedence(&self) -> Precedence {
         self.tokens.get(self.peek_pos)
             .map(token_precedence)
-            .unwrap_or(Precedence::Lowest)
+            .unwrap_or(Lowest)
     }
 
     fn cur_precedence(&self) -> Precedence {
@@ -220,7 +217,7 @@ impl Parser {
             self.tokens.get(self.peek_pos),
             Some(TokenType::PLUS  | TokenType::MINUS | TokenType::MUL  |
                  TokenType::DIV   | TokenType::EQ    | TokenType::NEQ  |
-                 TokenType::LT    | TokenType::GT)
+                 TokenType::LT    | TokenType::GT    | TokenType::LPAREN)
         )
     }
 
@@ -235,6 +232,7 @@ impl Parser {
             | TokenType::MINUS   => self.parse_prefix_expression(),
             TokenType::LPAREN    => self.parse_grouped_expression(),
             TokenType::IF        => self.parse_if_expression(),
+            TokenType::FUNCTION  => self.parse_function_literal(),
             other => Err(ParseError::new(format!(
                 "No prefix parse function for '{:?}' found!", other
             ))),
@@ -247,6 +245,8 @@ impl Parser {
             value: self.cur_token.get_literal(),
         })
     }
+
+
 
     fn parse_integer_literal(&self) -> Result<Expression, ParseError> {
         let token = self.cur_token.clone();
@@ -280,6 +280,49 @@ impl Parser {
         let expr = self.parse_expression(Precedence::Lowest)?;
         self.expect_peek(TokenType::RPAREN)?;
         Ok(expr)
+    }
+
+    fn parse_function_literal(&mut self) -> Result<Expression, ParseError> {
+        let token = self.cur_token.clone();
+
+        self.expect_peek(TokenType::LPAREN)?;
+        let parameters = self.parse_function_parameters()?;
+        self.expect_peek(TokenType::LBRACE)?;
+        let body = self.parse_block_statement();
+
+        Ok(Expression::FunctionLiteral(FunctionLiteral {
+            token,
+            parameters,
+            body
+        }))
+    }
+
+    fn parse_function_parameters(&mut self) -> Result<Vec<Identifier>, ParseError> {
+        let mut identifiers = Vec::new();
+
+        if self.peek_token_is(&TokenType::RPAREN) {
+            self.next_token();
+            return Ok(identifiers);
+        }
+
+        self.next_token();
+        identifiers.push(Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.get_literal(),
+        });
+
+        while self.peek_token_is(&TokenType::COMMA) {
+            self.next_token();
+            self.next_token();
+            identifiers.push(Identifier {
+                token: self.cur_token.clone(),
+                value: self.cur_token.get_literal(),
+            });
+        }
+
+        self.expect_peek(TokenType::RPAREN)?;
+
+        Ok(identifiers)
     }
 
     fn parse_if_expression(&mut self) -> Result<Expression, ParseError> {
@@ -329,11 +372,45 @@ impl Parser {
         match &self.cur_token {
             TokenType::PLUS  | TokenType::MINUS | TokenType::MUL  |
             TokenType::DIV   | TokenType::EQ    | TokenType::NEQ  |
-            TokenType::LT    | TokenType::GT    => self.parse_infix_expression(left),
-            other => Err(ParseError::new(format!(
+            TokenType::LT    | TokenType::GT   => self.parse_infix_expression(left),
+            TokenType::LPAREN => self.parse_call_expression(left),
+                other => Err(ParseError::new(format!(
                 "No infix parse function for '{:?}' found!", other
             ))),
         }
+    }
+
+    fn parse_call_expression(&mut self, function: Expression) -> Result<Expression, ParseError> {
+        let token = self.cur_token.clone();
+        let arguments = self.parse_call_arguments()?;
+
+        Ok(Expression::Call( CallExpression {
+            token,
+            function: Box::new(function),
+            arguments,
+        } ))
+    }
+
+    fn parse_call_arguments(&mut self) -> Result<Vec<Box<Expression>>, ParseError> {
+        let mut args: Vec<Box<Expression>> = Vec::new();
+
+        if self.peek_token_is(&TokenType::RPAREN) {
+            self.next_token();
+            return Ok(args);
+        }
+
+        self.next_token();
+        args.push(Box::new(self.parse_expression(Lowest)?));
+
+        while self.peek_token_is(&TokenType::COMMA) {
+            self.next_token();
+            self.next_token();
+            args.push(Box::new(self.parse_expression(Lowest)?));
+        }
+
+        self.expect_peek(TokenType::RPAREN)?;
+
+        Ok(args)
     }
 
     fn parse_infix_expression(&mut self, left: Expression) -> Result<Expression, ParseError> {

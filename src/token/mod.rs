@@ -6,12 +6,10 @@ pub enum TokenType {
     ILLEGAL,
     EOF,
 
-    // Identifiers + literals
     IDENT(String),
     INT(String),
     STRING(String),
 
-    // Operators
     ASSIGN,
     PLUS,
     MINUS,
@@ -23,7 +21,6 @@ pub enum TokenType {
     EQ,
     NEQ,
 
-    // Delimiters
     COMMA,
     SEMICOLON,
     LPAREN,
@@ -35,7 +32,6 @@ pub enum TokenType {
     COLON,
     DOT,
 
-    // Keywords
     FUNCTION,
     LET,
     TRUE,
@@ -89,7 +85,7 @@ impl TokenType {
 pub fn lookup_keyword(ident: &str) -> TokenType {
     let keywords = HashMap::from([
         ("let", TokenType::LET),
-        ("fn", TokenType::FUNCTION),
+        ("fun", TokenType::FUNCTION),
         ("true", TokenType::TRUE),
         ("false", TokenType::FALSE),
         ("if", TokenType::IF),

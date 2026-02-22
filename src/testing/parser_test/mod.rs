@@ -1,8 +1,8 @@
-use crate::ast::{Expression, Node, Statement};
+use crate::ast::{Expression, Node, Statement, Program};
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 
-fn parse(input: &str) -> crate::ast::Program {
+fn parse(input: &str) -> Program {
     let mut l = Lexer::from_str(input);
     l.convert_to_tokens();
     let mut parser = Parser::new(l);
@@ -11,7 +11,6 @@ fn parse(input: &str) -> crate::ast::Program {
     program
 }
 
-// ── Let statements ────────────────────────────────────────────────────────────
 
 #[test]
 fn test_let_statements() {
@@ -32,7 +31,6 @@ let foobar = 838383;
     }
 }
 
-// ── Return statements ─────────────────────────────────────────────────────────
 
 #[test]
 fn test_return_statements() {
@@ -50,7 +48,6 @@ return 993322;");
     }
 }
 
-// ── Identifier expression ─────────────────────────────────────────────────────
 
 #[test]
 fn test_identifier_expression() {
@@ -68,7 +65,6 @@ fn test_identifier_expression() {
     assert_eq!(ident.token_literal(), "foobar");
 }
 
-// ── Integer literal ───────────────────────────────────────────────────────────
 
 #[test]
 fn test_integer_expression() {
@@ -86,7 +82,6 @@ fn test_integer_expression() {
     assert_eq!(int.token_literal(), "5");
 }
 
-// ── Prefix expressions ────────────────────────────────────────────────────────
 
 #[test]
 fn test_prefix_expressions() {
@@ -115,7 +110,6 @@ fn test_prefix_expressions() {
     }
 }
 
-// ── Infix expressions ─────────────────────────────────────────────────────────
 
 #[test]
 fn test_infix_expressions() {
@@ -134,7 +128,6 @@ fn test_infix_expressions() {
     }
 }
 
-// ── Grouped expressions ───────────────────────────────────────────────────────
 
 #[test]
 fn test_grouped_expressions() {
@@ -150,7 +143,6 @@ fn test_grouped_expressions() {
     }
 }
 
-// ── Boolean expression ────────────────────────────────────────────────────────
 
 #[test]
 fn test_bool_expression() {
@@ -168,7 +160,6 @@ fn test_bool_expression() {
     assert_eq!(boolean.token_literal(), "true");
 }
 
-// ── If expression — no else ───────────────────────────────────────────────────
 
 #[test]
 fn test_if_expression() {
@@ -182,7 +173,7 @@ fn test_if_expression() {
         panic!("Expected IfExpression");
     };
 
-    // condition: x < y
+
     let Expression::Infix(condition) = if_expr.condition.as_ref() else {
         panic!("Expected InfixExpression as condition");
     };
@@ -198,7 +189,6 @@ fn test_if_expression() {
     };
     assert_eq!(right.value, "y");
 
-    // consequence: { x }
     assert_eq!(if_expr.consequence.statements.len(), 1);
     let Statement::Expression(cons_stmt) = &if_expr.consequence.statements[0] else {
         panic!("Expected ExpressionStatement in consequence");
@@ -208,11 +198,9 @@ fn test_if_expression() {
     };
     assert_eq!(cons_ident.value, "x");
 
-    // no alternative
     assert!(if_expr.alternative.is_none());
 }
 
-// ── If-else expression ────────────────────────────────────────────────────────
 
 #[test]
 fn test_if_else_expression() {
@@ -226,13 +214,11 @@ fn test_if_else_expression() {
         panic!("Expected IfExpression");
     };
 
-    // condition
     let Expression::Infix(condition) = if_expr.condition.as_ref() else {
         panic!("Expected InfixExpression as condition");
     };
     assert_eq!(condition.operator, "<");
 
-    // consequence: { x }
     assert_eq!(if_expr.consequence.statements.len(), 1);
     let Statement::Expression(cons_stmt) = &if_expr.consequence.statements[0] else {
         panic!("Expected ExpressionStatement in consequence");
@@ -242,7 +228,6 @@ fn test_if_else_expression() {
     };
     assert_eq!(cons_ident.value, "x");
 
-    // alternative: { y }
     let alt = if_expr.alternative.as_ref().expect("Expected alternative block");
     assert_eq!(alt.statements.len(), 1);
     let Statement::Expression(alt_stmt) = &alt.statements[0] else {
@@ -254,13 +239,181 @@ fn test_if_else_expression() {
     assert_eq!(alt_ident.value, "y");
 }
 
-// ── If expression string representation ──────────────────────────────────────
+
 
 #[test]
 fn test_if_expression_string_representation() {
     let tests = vec![
         ("if (x < y) { x }",              "if (x < y) { x }"),
         ("if (x < y) { x } else { y }",   "if (x < y) { x } else { y }"),
+    ];
+
+    for (input, expected) in tests {
+        let program = parse(input);
+        assert_eq!(program.string().trim(), expected, "input: {}", input);
+    }
+}
+
+
+#[test]
+fn test_function_literal() {
+    let program = parse("fun(x, y) { x + y; }");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Expression(stmt) = &program.statements[0] else {
+        panic!("Expected ExpressionStatement");
+    };
+    let Expression::FunctionLiteral(func) = &stmt.expression else {
+        panic!("Expected FunctionLiteral");
+    };
+
+    assert_eq!(func.parameters.len(), 2);
+    assert_eq!(func.parameters[0].value, "x");
+    assert_eq!(func.parameters[1].value, "y");
+
+    assert_eq!(func.body.statements.len(), 1);
+    let Statement::Expression(body_stmt) = &func.body.statements[0] else {
+        panic!("Expected ExpressionStatement in body");
+    };
+    let Expression::Infix(infix) = &body_stmt.expression else {
+        panic!("Expected InfixExpression in body");
+    };
+    assert_eq!(infix.operator, "+");
+
+    let Expression::Identifier(left) = infix.left.as_ref() else {
+        panic!("Expected Identifier on left of body infix");
+    };
+    assert_eq!(left.value, "x");
+
+    let Expression::Identifier(right) = infix.right.as_ref() else {
+        panic!("Expected Identifier on right of body infix");
+    };
+    assert_eq!(right.value, "y");
+}
+
+
+#[test]
+fn test_function_literal_parameters() {
+    let tests = vec![
+        ("fun() {}",        vec![]),
+        ("fun(x) {}",       vec!["x"]),
+        ("fun(x, y, z) {}", vec!["x", "y", "z"]),
+    ];
+
+    for (input, expected_params) in tests {
+        let program = parse(input);
+
+        let Statement::Expression(stmt) = &program.statements[0] else {
+            panic!("Expected ExpressionStatement for input: {}", input);
+        };
+        let Expression::FunctionLiteral(func) = &stmt.expression else {
+            panic!("Expected FunctionLiteral for input: {}", input);
+        };
+
+        assert_eq!(func.parameters.len(), expected_params.len(), "input: {}", input);
+        for (param, expected) in func.parameters.iter().zip(expected_params.iter()) {
+            assert_eq!(param.value, *expected, "input: {}", input);
+        }
+    }
+}
+
+
+#[test]
+fn test_function_literal_string_representation() {
+    let tests = vec![
+        ("fun(x, y) { x + y; }", "fun(x, y) { (x + y) }"),
+        ("fun() { 5; }",         "fun() { 5 }"),
+    ];
+
+    for (input, expected) in tests {
+        let program = parse(input);
+        assert_eq!(program.string().trim(), expected, "input: {}", input);
+    }
+}
+
+
+#[test]
+fn test_call_expression() {
+    let program = parse("add(1, 2 * 3, 4 + 5);");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Expression(stmt) = &program.statements[0] else {
+        panic!("Expected ExpressionStatement");
+    };
+    let Expression::Call(call) = &stmt.expression else {
+        panic!("Expected CallExpression");
+    };
+
+    let Expression::Identifier(func) = call.function.as_ref() else {
+        panic!("Expected Identifier as function");
+    };
+    assert_eq!(func.value, "add");
+
+    assert_eq!(call.arguments.len(), 3);
+
+    let Expression::IntegerLiteral(arg0) = call.arguments[0].as_ref() else {
+        panic!("Expected IntegerLiteral as first argument");
+    };
+    assert_eq!(arg0.value, 1);
+
+    let Expression::Infix(arg1) = call.arguments[1].as_ref() else {
+        panic!("Expected InfixExpression as second argument");
+    };
+    assert_eq!(arg1.operator, "*");
+
+    let Expression::Infix(arg2) = call.arguments[2].as_ref() else {
+        panic!("Expected InfixExpression as third argument");
+    };
+    assert_eq!(arg2.operator, "+");
+}
+
+
+#[test]
+fn test_call_expression_no_arguments() {
+    let program = parse("foo();");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Expression(stmt) = &program.statements[0] else {
+        panic!("Expected ExpressionStatement");
+    };
+    let Expression::Call(call) = &stmt.expression else {
+        panic!("Expected CallExpression");
+    };
+
+    let Expression::Identifier(func) = call.function.as_ref() else {
+        panic!("Expected Identifier as function");
+    };
+    assert_eq!(func.value, "foo");
+    assert_eq!(call.arguments.len(), 0);
+}
+
+
+#[test]
+fn test_call_expression_with_function_literal() {
+    let program = parse("fun(x, y) { x + y; }(2, 3);");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Expression(stmt) = &program.statements[0] else {
+        panic!("Expected ExpressionStatement");
+    };
+    let Expression::Call(call) = &stmt.expression else {
+        panic!("Expected CallExpression");
+    };
+
+    let Expression::FunctionLiteral(func) = call.function.as_ref() else {
+        panic!("Expected FunctionLiteral as function");
+    };
+    assert_eq!(func.parameters.len(), 2);
+    assert_eq!(call.arguments.len(), 2);
+}
+
+
+#[test]
+fn test_call_expression_string_representation() {
+    let tests = vec![
+        ("add(1, 2 * 3, 4 + 5);", "add(1, (2 * 3), (4 + 5))"),
+        ("foo();",                 "foo()"),
+        ("foo(a, b);",             "foo(a, b)"),
     ];
 
     for (input, expected) in tests {

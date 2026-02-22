@@ -1,13 +1,9 @@
 use crate::token::TokenType;
 
-// ── Node trait (nur noch für string/token_literal) ───────────────────────────
-
 pub trait Node {
     fn token_literal(&self) -> String;
     fn string(&self) -> String;
 }
-
-// ── Statement enum ────────────────────────────────────────────────────────────
 
 pub enum Statement {
     Let(LetStatement),
@@ -35,8 +31,6 @@ impl Node for Statement {
     }
 }
 
-// ── Expression enum ───────────────────────────────────────────────────────────
-
 pub enum Expression {
     Identifier(Identifier),
     IntegerLiteral(IntegerLiteral),
@@ -44,6 +38,8 @@ pub enum Expression {
     Prefix(PrefixExpression),
     Infix(InfixExpression),
     If(IfExpression),
+    FunctionLiteral(FunctionLiteral),
+    Call(CallExpression),
 }
 
 impl Node for Expression {
@@ -55,6 +51,8 @@ impl Node for Expression {
             Expression::Prefix(e)        => e.token_literal(),
             Expression::Infix(e)         => e.token_literal(),
             Expression::If(e)            => e.token_literal(),
+            Expression::FunctionLiteral(e) => e.token_literal(),
+            Expression::Call(e) => e.token_literal(),
         }
     }
     fn string(&self) -> String {
@@ -65,11 +63,11 @@ impl Node for Expression {
             Expression::Prefix(e)        => e.string(),
             Expression::Infix(e)         => e.string(),
             Expression::If(e)            => e.string(),
+            Expression::FunctionLiteral(e) => e.string(),
+            Expression::Call(e) => e.string(),
         }
     }
 }
-
-// ── Program ───────────────────────────────────────────────────────────────────
 
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -83,8 +81,6 @@ impl Node for Program {
         self.statements.iter().map(|s| s.string()).collect()
     }
 }
-
-// ── Concrete statement types ──────────────────────────────────────────────────
 
 pub struct LetStatement {
     pub token: TokenType,
@@ -135,8 +131,6 @@ impl Node for BlockStatement {
     }
 }
 
-// ── Concrete expression types ─────────────────────────────────────────────────
-
 pub struct Identifier {
     pub token: TokenType,
     pub value: String,
@@ -165,6 +159,44 @@ pub struct BooleanLiteral {
 impl Node for BooleanLiteral {
     fn token_literal(&self) -> String { self.token.get_literal() }
     fn string(&self) -> String { self.token.get_literal() }
+}
+
+pub struct FunctionLiteral {
+    pub token: TokenType,
+    pub parameters: Vec<Identifier>,
+    pub body: BlockStatement,
+}
+
+impl Node for FunctionLiteral {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        let params = self.parameters
+            .iter()
+            .map(|p| p.string())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        format!("{}({}) {{ {} }}", self.token.get_literal(), params, self.body.string())
+    }
+}
+
+pub struct CallExpression {
+    pub token: TokenType,
+    pub function: Box<Expression>,
+    pub arguments: Vec<Box<Expression>>,
+}
+
+impl Node for CallExpression {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        let args = self.arguments
+            .iter()
+            .map(|a| a.string())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        format!("{}({})", self.function.string(), args)
+    }
 }
 
 pub struct PrefixExpression {

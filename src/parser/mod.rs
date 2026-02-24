@@ -1,6 +1,6 @@
 use crate::lexer::Lexer;
 use crate::token::TokenType;
-use crate::ast::{BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement};
+use crate::ast::{BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, Identifier, IfExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement, StringLiteral};
 use crate::parser::Precedence::Lowest;
 
 #[derive(PartialOrd, PartialEq, Clone, Copy)]
@@ -157,7 +157,7 @@ impl Parser {
         self.expect_peek(TokenType::ASSIGN)?;
         self.next_token(); // move past '='
 
-        let value = self.parse_expression(Precedence::Lowest)?;
+        let value = self.parse_expression(Lowest)?;
 
         if self.peek_token_is(&TokenType::SEMICOLON) {
             self.next_token();
@@ -170,7 +170,7 @@ impl Parser {
         let token = self.cur_token.clone();
         self.next_token();
 
-        let return_value = self.parse_expression(Precedence::Lowest)?;
+        let return_value = self.parse_expression(Lowest)?;
 
         if self.peek_token_is(&TokenType::SEMICOLON) {
             self.next_token();
@@ -181,7 +181,7 @@ impl Parser {
 
     fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, ParseError> {
         let token = self.cur_token.clone();
-        let expression = self.parse_expression(Precedence::Lowest)?;
+        let expression = self.parse_expression(Lowest)?;
 
         if self.peek_token_is(&TokenType::SEMICOLON) {
             self.next_token();
@@ -221,6 +221,16 @@ impl Parser {
         )
     }
 
+    fn parse_string_literal(&self) -> Result<Expression, ParseError> {
+        match &self.cur_token {
+            TokenType::STRING(s) => Ok(Expression::StringLiteral(StringLiteral {
+                token: self.cur_token.clone(),
+                value: s.clone(),
+            })),
+            _ => Err(ParseError::new("Expected string literal")),
+        }
+    }
+
 
     fn parse_prefix(&mut self) -> Result<Expression, ParseError> {
         match &self.cur_token {
@@ -233,6 +243,7 @@ impl Parser {
             TokenType::LPAREN    => self.parse_grouped_expression(),
             TokenType::IF        => self.parse_if_expression(),
             TokenType::FUNCTION  => self.parse_function_literal(),
+            TokenType::STRING(_) => self.parse_string_literal(),
             other => Err(ParseError::new(format!(
                 "No prefix parse function for '{:?}' found!", other
             ))),
@@ -277,7 +288,7 @@ impl Parser {
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, ParseError> {
         self.next_token();
-        let expr = self.parse_expression(Precedence::Lowest)?;
+        let expr = self.parse_expression(Lowest)?;
         self.expect_peek(TokenType::RPAREN)?;
         Ok(expr)
     }
@@ -330,7 +341,7 @@ impl Parser {
 
         self.expect_peek(TokenType::LPAREN)?;
         self.next_token();
-        let condition = self.parse_expression(Precedence::Lowest)?;
+        let condition = self.parse_expression(Lowest)?;
         self.expect_peek(TokenType::RPAREN)?;
         self.expect_peek(TokenType::LBRACE)?;
         let consequence = self.parse_block_statement();

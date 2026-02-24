@@ -1,5 +1,6 @@
 use std::error::Error;
-use oxide::ast::Node;
+use oxide::environment::Environment;
+use oxide::evaluator::eval_program;
 use oxide::lexer::Lexer;
 use oxide::parser::Parser;
 
@@ -9,8 +10,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut parser = Parser::new(l);
     let program = parser.parse_program();
     parser.check_parser_errors();
-    println!("{}", program.string());
+
+    let mut env = Environment::new();
+    let result = eval_program(&program, &mut env);
+    println!("{}", result);
+
     Ok(())
 }
-
-

@@ -5,6 +5,7 @@ pub trait Node {
     fn string(&self) -> String;
 }
 
+#[derive(Clone, Debug)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -30,7 +31,7 @@ impl Node for Statement {
         }
     }
 }
-
+#[derive(Clone, Debug)]
 pub enum Expression {
     Identifier(Identifier),
     IntegerLiteral(IntegerLiteral),
@@ -40,6 +41,7 @@ pub enum Expression {
     If(IfExpression),
     FunctionLiteral(FunctionLiteral),
     Call(CallExpression),
+    StringLiteral(StringLiteral),
 }
 
 impl Node for Expression {
@@ -53,6 +55,7 @@ impl Node for Expression {
             Expression::If(e)            => e.token_literal(),
             Expression::FunctionLiteral(e) => e.token_literal(),
             Expression::Call(e) => e.token_literal(),
+            Expression::StringLiteral(s) => s.token_literal(),
         }
     }
     fn string(&self) -> String {
@@ -65,6 +68,8 @@ impl Node for Expression {
             Expression::If(e)            => e.string(),
             Expression::FunctionLiteral(e) => e.string(),
             Expression::Call(e) => e.string(),
+            Expression::StringLiteral(s) => s.string(),
+
         }
     }
 }
@@ -81,7 +86,7 @@ impl Node for Program {
         self.statements.iter().map(|s| s.string()).collect()
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct LetStatement {
     pub token: TokenType,
     pub name: Identifier,
@@ -94,7 +99,7 @@ impl Node for LetStatement {
         format!("{} {} = {};", self.token_literal(), self.name.string(), self.value.string())
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct ReturnStatement {
     pub token: TokenType,
     pub return_value: Expression,
@@ -106,7 +111,7 @@ impl Node for ReturnStatement {
         format!("{} {};", self.token_literal(), self.return_value.string())
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct ExpressionStatement {
     pub token: TokenType,
     pub expression: Expression,
@@ -116,7 +121,7 @@ impl Node for ExpressionStatement {
     fn token_literal(&self) -> String { self.token.get_literal() }
     fn string(&self) -> String { self.expression.string() }
 }
-
+#[derive(Clone, Debug)]
 pub struct BlockStatement {
     pub token: TokenType,
     pub statements: Vec<Statement>,
@@ -130,7 +135,7 @@ impl Node for BlockStatement {
         self.statements.iter().map(|s| s.string()).collect()
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct Identifier {
     pub token: TokenType,
     pub value: String,
@@ -140,7 +145,7 @@ impl Node for Identifier {
     fn token_literal(&self) -> String { self.token.get_literal() }
     fn string(&self) -> String { self.value.clone() }
 }
-
+#[derive(Clone, Debug)]
 pub struct IntegerLiteral {
     pub token: TokenType,
     pub value: i64,
@@ -150,7 +155,7 @@ impl Node for IntegerLiteral {
     fn token_literal(&self) -> String { self.token.get_literal() }
     fn string(&self) -> String { self.value.to_string() }
 }
-
+#[derive(Clone, Debug)]
 pub struct BooleanLiteral {
     pub token: TokenType,
     pub value: bool,
@@ -160,7 +165,7 @@ impl Node for BooleanLiteral {
     fn token_literal(&self) -> String { self.token.get_literal() }
     fn string(&self) -> String { self.token.get_literal() }
 }
-
+#[derive(Clone, Debug)]
 pub struct FunctionLiteral {
     pub token: TokenType,
     pub parameters: Vec<Identifier>,
@@ -180,6 +185,18 @@ impl Node for FunctionLiteral {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct StringLiteral {
+    pub token: TokenType,
+    pub value: String,
+}
+
+impl Node for StringLiteral {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String { self.value.clone() }
+}
+
+#[derive(Clone, Debug)]
 pub struct CallExpression {
     pub token: TokenType,
     pub function: Box<Expression>,
@@ -198,7 +215,7 @@ impl Node for CallExpression {
         format!("{}({})", self.function.string(), args)
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct PrefixExpression {
     pub token: TokenType,
     pub operator: String,
@@ -211,7 +228,7 @@ impl Node for PrefixExpression {
         format!("({}{})", self.operator, self.right.string())
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct InfixExpression {
     pub token: TokenType,
     pub left: Box<Expression>,
@@ -225,7 +242,7 @@ impl Node for InfixExpression {
         format!("({} {} {})", self.left.string(), self.operator, self.right.string())
     }
 }
-
+#[derive(Clone, Debug)]
 pub struct IfExpression {
     pub token: TokenType,
     pub condition: Box<Expression>,

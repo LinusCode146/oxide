@@ -109,8 +109,8 @@ fn test_eval_bang_operator() {
         ("!false",   true),
         ("!!true",   true),
         ("!!false",  false),
-        ("!5",       false),  // truthy integer
-        ("!0",       false),  // 0 is still truthy in Monkey
+        ("!5",       false),
+        ("!0",       false),
     ];
     for (input, expected) in tests {
         assert_boolean(eval(input), expected);
@@ -172,7 +172,6 @@ fn test_eval_if_expression_truthy() {
 
 #[test]
 fn test_eval_if_expression_null_branch() {
-    // no else branch + falsy condition → Null
     assert_null(eval("if (false) { 10 }"));
     assert_null(eval("if (1 > 2) { 10 }"));
 }

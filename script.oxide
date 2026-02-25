@@ -9,5 +9,8 @@ let factorial = fun (n) {
 
 
 let result = factorial(5);
+let mom = "Hihuu";
+let num = len(mom);
 
 log(result);
+log(len("hihuu"));

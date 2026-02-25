@@ -163,7 +163,7 @@ fn test_bool_expression() {
 
 #[test]
 fn test_if_expression() {
-    let program = parse("if (x < y) { x }");
+    let program = parse("if x < y { x }");
     assert_eq!(program.statements.len(), 1);
 
     let Statement::Expression(stmt) = &program.statements[0] else {
@@ -204,7 +204,7 @@ fn test_if_expression() {
 
 #[test]
 fn test_if_else_expression() {
-    let program = parse("if (x < y) { x } else { y }");
+    let program = parse("if x < y { x } else { y }");
     assert_eq!(program.statements.len(), 1);
 
     let Statement::Expression(stmt) = &program.statements[0] else {
@@ -244,8 +244,8 @@ fn test_if_else_expression() {
 #[test]
 fn test_if_expression_string_representation() {
     let tests = vec![
-        ("if (x < y) { x }",              "if (x < y) { x }"),
-        ("if (x < y) { x } else { y }",   "if (x < y) { x } else { y }"),
+        ("if x < y { x }",              "if (x < y) { x }"),
+        ("if x < y { x } else { y }",   "if (x < y) { x } else { y }"),
     ];
 
     for (input, expected) in tests {

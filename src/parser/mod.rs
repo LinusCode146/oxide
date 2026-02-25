@@ -339,10 +339,8 @@ impl Parser {
     fn parse_if_expression(&mut self) -> Result<Expression, ParseError> {
         let token = self.cur_token.clone();
 
-        self.expect_peek(TokenType::LPAREN)?;
         self.next_token();
         let condition = self.parse_expression(Lowest)?;
-        self.expect_peek(TokenType::RPAREN)?;
         self.expect_peek(TokenType::LBRACE)?;
         let consequence = self.parse_block_statement();
 

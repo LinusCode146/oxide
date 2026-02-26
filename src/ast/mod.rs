@@ -42,6 +42,8 @@ pub enum Expression {
     FunctionLiteral(FunctionLiteral),
     Call(CallExpression),
     StringLiteral(StringLiteral),
+    ArrayLiteral(ArrayLiteral),
+    Index(IndexExpression)
 }
 
 impl Node for Expression {
@@ -56,6 +58,8 @@ impl Node for Expression {
             Expression::FunctionLiteral(e) => e.token_literal(),
             Expression::Call(e) => e.token_literal(),
             Expression::StringLiteral(s) => s.token_literal(),
+            Expression::ArrayLiteral(a) => a.token_literal(),
+            Expression::Index(i  ) => i.token_literal(),
         }
     }
     fn string(&self) -> String {
@@ -69,7 +73,8 @@ impl Node for Expression {
             Expression::FunctionLiteral(e) => e.string(),
             Expression::Call(e) => e.string(),
             Expression::StringLiteral(s) => s.string(),
-
+            Expression::ArrayLiteral(e) => e.string(),
+            Expression::Index(i  ) => i.string(),
         }
     }
 }
@@ -197,10 +202,24 @@ impl Node for StringLiteral {
 }
 
 #[derive(Clone, Debug)]
+pub struct IndexExpression {
+    pub token: TokenType,
+    pub left: Box<Expression>,
+    pub index: Box<Expression>
+}
+
+#[derive(Clone, Debug)]
 pub struct CallExpression {
     pub token: TokenType,
     pub function: Box<Expression>,
     pub arguments: Vec<Box<Expression>>,
+}
+
+impl Node for IndexExpression {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        format!("({}[{}])", self.left.string(), self.index.string())
+    }
 }
 
 impl Node for CallExpression {
@@ -228,6 +247,26 @@ impl Node for PrefixExpression {
         format!("({}{})", self.operator, self.right.string())
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct ArrayLiteral {
+    pub token: TokenType,
+    pub elements: Vec<Box<Expression>>
+}
+
+impl Node for ArrayLiteral {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        let elements = self.elements
+            .iter()
+            .map(|e| e.string())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        format!("[{}]", elements)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct InfixExpression {
     pub token: TokenType,

@@ -1,7 +1,7 @@
 use crate::ast::{Expression, Program, Statement};
 use crate::builtins::get_builtin;
 use crate::environment::Environment;
-use crate::object::{FunctionObject, Object};
+use crate::object::{ArrayObject, FunctionObject, Object};
 
 pub fn eval_program(program: &Program, env: &mut Environment) -> Object {
     let mut result = Object::Null;
@@ -62,6 +62,21 @@ fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
         Expression::StringLiteral(s) => Object::StringObj(s.value.clone()),
 
         Expression::Identifier(id) => eval_identifier(&id.value, env),
+
+        Expression::ArrayLiteral(arr) => {
+            let elements = eval_expressions(&*arr.elements, env);
+            Object::Array(ArrayObject {
+                elements
+            })
+        },
+
+        Expression::Index(ie) => {
+            let left = eval_expression(&ie.left, env);
+            if left.is_error() { return left; }
+            let index = eval_expression(&ie.index, env);
+            if index.is_error() { return index; }
+            eval_index_expression(left, index)
+        }
 
         Expression::Prefix(p) => {
             let right = eval_expression(&p.right, env);
@@ -126,6 +141,23 @@ fn eval_block_statement(block: &crate::ast::BlockStatement, env: &mut Environmen
         }
     }
     result
+}
+
+fn eval_index_expression(left: Object, index: Object) -> Object {
+    match (&left, &index) {
+        (Object::Array(arr), Object::Integer(i)) => {
+            let len = arr.elements.len() as i64;
+            if *i < 0 || *i >= len {
+                Object::Null
+            } else {
+                arr.elements[*i as usize].clone()
+            }
+        }
+        _ => Object::Error(format!(
+            "index operator not supported: {}",
+            left.object_type()
+        )),
+    }
 }
 
 fn eval_identifier(name: &str, env: &Environment) -> Object {

@@ -14,6 +14,12 @@ pub enum Object {
     Builtin(BuiltinFn),
     Null,
     Error(String),
+    Array(ArrayObject)
+}
+
+#[derive(Clone, Debug)]
+pub struct ArrayObject {
+    pub elements: Vec<Object>
 }
 
 #[derive(Clone, Debug)]
@@ -41,6 +47,14 @@ impl fmt::Display for Object {
                     .join(", ");
                 write!(f, "fn({}) {{\n{}\n}}", params, func.body.string())
             },
+            Object::Array(arr) => {
+                let elements = arr.elements
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "[{}]", elements)
+            },
             Object::Builtin(_) => write!(f, "[builtin function]"),
             Object::Error(msg)      => write!(f, "ERROR: {}", msg),
         }
@@ -57,6 +71,7 @@ impl Object {
             Object::Function(_)    => "FUNCTION",
             Object::Builtin(_)     => "BUILTIN",
             Object::StringObj(_) => "STRING",
+            Object::Array(_)       => "ARRAY",
             Object::Error(_)       => "ERROR",
         }
     }

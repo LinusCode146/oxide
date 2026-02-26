@@ -570,3 +570,105 @@ result[2]
 ";
     assert_integer(eval(input), 6);
 }
+
+
+#[test]
+fn test_eval_hash_literal() {
+    let input = r#"{"one": 1, "two": 2, "three": 3}"#;
+    let result = eval(input);
+    let Object::Hash(hash) = result else {
+        panic!("Expected Hash, got: {:?}", result);
+    };
+    assert_eq!(hash.pairs.len(), 3);
+}
+
+#[test]
+fn test_eval_hash_integer_keys() {
+    let input = r#"{1: "one", 2: "two"}"#;
+    let result = eval(input);
+    let Object::Hash(hash) = result else {
+        panic!("Expected Hash, got: {:?}", result);
+    };
+    assert_eq!(hash.pairs.len(), 2);
+}
+
+#[test]
+fn test_eval_hash_boolean_keys() {
+    let input = "{true: 1, false: 2}";
+    let result = eval(input);
+    let Object::Hash(hash) = result else {
+        panic!("Expected Hash, got: {:?}", result);
+    };
+    assert_eq!(hash.pairs.len(), 2);
+}
+
+#[test]
+fn test_eval_empty_hash() {
+    let result = eval("{}");
+    let Object::Hash(hash) = result else {
+        panic!("Expected Hash, got: {:?}", result);
+    };
+    assert_eq!(hash.pairs.len(), 0);
+}
+
+#[test]
+fn test_eval_hash_index_string_key() {
+    let tests = vec![
+        (r#"{"foo": 5}["foo"]"#,           5i64),
+        (r#"{"foo": 5, "bar": 10}["bar"]"#, 10),
+    ];
+    for (input, expected) in tests {
+        assert_integer(eval(input), expected);
+    }
+}
+
+#[test]
+fn test_eval_hash_index_integer_key() {
+    let tests = vec![
+        ("{1: 10, 2: 20}[1]", 10i64),
+        ("{1: 10, 2: 20}[2]", 20),
+    ];
+    for (input, expected) in tests {
+        assert_integer(eval(input), expected);
+    }
+}
+
+#[test]
+fn test_eval_hash_index_boolean_key() {
+    let tests = vec![
+        ("{true: 1, false: 2}[true]",  1i64),
+        ("{true: 1, false: 2}[false]", 2),
+    ];
+    for (input, expected) in tests {
+        assert_integer(eval(input), expected);
+    }
+}
+
+#[test]
+fn test_eval_hash_index_missing_key() {
+    assert_null(eval(r#"{"foo": 5}["bar"]"#));
+    assert_null(eval("{1: 5}[2]"));
+    assert_null(eval("{true: 5}[false]"));
+}
+
+#[test]
+fn test_eval_hash_index_with_expression_key() {
+    assert_integer(eval(r#"let key = "foo"; {"foo": 99}[key]"#), 99);
+    assert_integer(eval("{1 + 1: 42}[2]"), 42);
+}
+
+#[test]
+fn test_eval_hash_unusable_key() {
+    assert_error(
+        eval("{[1, 2]: 5}"),
+        "unusable as hash key: ARRAY",
+    );
+}
+
+#[test]
+fn test_eval_hash_index_unusable_key() {
+    assert_error(
+        eval(r#"{"foo": 5}[[1]]"#),
+        "unusable as hash key: ARRAY",
+    );
+}

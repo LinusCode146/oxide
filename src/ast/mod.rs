@@ -43,7 +43,8 @@ pub enum Expression {
     Call(CallExpression),
     StringLiteral(StringLiteral),
     ArrayLiteral(ArrayLiteral),
-    Index(IndexExpression)
+    Index(IndexExpression),
+    HashLiteral(HashLiteral),
 }
 
 impl Node for Expression {
@@ -60,6 +61,7 @@ impl Node for Expression {
             Expression::StringLiteral(s) => s.token_literal(),
             Expression::ArrayLiteral(a) => a.token_literal(),
             Expression::Index(i  ) => i.token_literal(),
+            Expression::HashLiteral(i  ) => i.token_literal(),
         }
     }
     fn string(&self) -> String {
@@ -75,6 +77,7 @@ impl Node for Expression {
             Expression::StringLiteral(s) => s.string(),
             Expression::ArrayLiteral(e) => e.string(),
             Expression::Index(i  ) => i.string(),
+            Expression::HashLiteral(i  ) => i.string(),
         }
     }
 }
@@ -201,6 +204,8 @@ impl Node for StringLiteral {
     fn string(&self) -> String { self.value.clone() }
 }
 
+
+
 #[derive(Clone, Debug)]
 pub struct IndexExpression {
     pub token: TokenType,
@@ -247,6 +252,26 @@ impl Node for PrefixExpression {
         format!("({}{})", self.operator, self.right.string())
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct HashLiteral {
+    pub token: TokenType,
+    pub pairs: Vec<(Expression, Expression)>,
+}
+
+impl Node for HashLiteral {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        let pairs = self.pairs
+            .iter()
+            .map(|(key, value)| format!("{}:{}", key.string(), value.string()))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        format!("{{{}}}", pairs)
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct ArrayLiteral {

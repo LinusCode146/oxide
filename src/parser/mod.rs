@@ -1,6 +1,6 @@
 use crate::lexer::Lexer;
 use crate::token::TokenType;
-use crate::ast::{ArrayLiteral, BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement, StringLiteral};
+use crate::ast::{ArrayLiteral, BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement, StringLiteral};
 use crate::parser::Precedence::Lowest;
 
 #[derive(PartialOrd, PartialEq, Clone, Copy)]
@@ -82,7 +82,6 @@ impl Parser {
         &self.errors
     }
 
-    /// Panics on errors — kept for test convenience, matches original API.
     pub fn check_parser_errors(&self) {
         if self.errors.is_empty() { return; }
         eprintln!("Parser has encountered {} error(s):", self.errors.len());
@@ -248,10 +247,33 @@ impl Parser {
             TokenType::FUNCTION  => self.parse_function_literal(),
             TokenType::STRING(_) => self.parse_string_literal(),
             TokenType::LBRACKET  => self.parse_array_literal(),
+            TokenType::LBRACE  => self.parse_hash_literal(),
             other => Err(ParseError::new(format!(
                 "No prefix parse function for '{:?}' found!", other
             ))),
         }
+    }
+
+    fn parse_hash_literal(&mut self) -> Result<Expression, ParseError> {
+        let token = self.cur_token.clone();
+        let mut pairs = Vec::new();
+
+        while !self.peek_token_is(&TokenType::RBRACE) {
+            self.next_token();
+            let key = self.parse_expression(Lowest)?;
+            self.expect_peek(TokenType::COLON)?;
+            self.next_token();
+            let value = self.parse_expression(Lowest)?;
+
+            pairs.push((key, value));
+
+            if !self.peek_token_is(&TokenType::RBRACE) {
+                self.expect_peek(TokenType::COMMA)?;
+            }
+        }
+
+        self.expect_peek(TokenType::RBRACE)?;
+        Ok(Expression::HashLiteral(HashLiteral { token, pairs }))
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression, ParseError> {

@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use crate::ast::{Expression, Program, Statement};
 use crate::builtins::get_builtin;
 use crate::environment::Environment;
-use crate::object::{ArrayObject, FunctionObject, Object};
+use crate::object::{ArrayObject, FunctionObject, HashObject, HashPair, Object};
 
 pub fn eval_program(program: &Program, env: &mut Environment) -> Object {
     let mut result = Object::Null;
@@ -62,6 +63,25 @@ pub fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
         Expression::StringLiteral(s) => Object::StringObj(s.value.clone()),
 
         Expression::Identifier(id) => eval_identifier(&id.value, env),
+
+        Expression::HashLiteral(hl) => {
+            let mut pairs = HashMap::new();
+            for (key_expr, val_expr) in &hl.pairs {
+                let key = eval_expression(key_expr, env);
+                if key.is_error() { return key; }
+
+                let hash_key = match key.hash_key() {
+                    Some(k) => k,
+                    None    => return Object::Error(format!("unusable as hash key: {}", key.object_type())),
+                };
+
+                let value = eval_expression(val_expr, env);
+                if value.is_error() { return value; }
+
+                pairs.insert(hash_key, HashPair { key, value });
+            }
+            Object::Hash(HashObject { pairs })
+        }
 
         Expression::ArrayLiteral(arr) => {
             let elements = eval_expressions(&*arr.elements, env);
@@ -133,8 +153,6 @@ fn eval_block_statement(block: &crate::ast::BlockStatement, env: &mut Environmen
     let mut result = Object::Null;
     for stmt in &block.statements {
         result = eval_statement(stmt, env);
-        // Bubble up return values and errors WITHOUT unwrapping ReturnValue —
-        // that's only done at the program level.
         match &result {
             Object::ReturnValue(_) | Object::Error(_) => return result,
             _ => {}
@@ -152,7 +170,18 @@ fn eval_index_expression(left: Object, index: Object) -> Object {
             } else {
                 arr.elements[*i as usize].clone()
             }
-        }
+        },
+        (Object::Hash(hash), _) => {
+            match index.hash_key() {
+                None => Object::Error(format!(
+                    "unusable as hash key: {}", index.object_type()
+                )),
+                Some(key) => hash.pairs
+                    .get(&key)
+                    .map(|pair| pair.value.clone())
+                    .unwrap_or(Object::Null),
+            }
+        },
         _ => Object::Error(format!(
             "index operator not supported: {}",
             left.object_type()

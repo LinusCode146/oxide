@@ -93,7 +93,7 @@ impl Lexer {
     }
 
     fn read_string(&mut self) -> Vec<u8> {
-        self.read_char(); // skip opening "
+        self.read_char(); 
         let mut string = Vec::new();
         while self.ch != b'"' && self.ch != 0 {
             string.push(self.ch);

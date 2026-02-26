@@ -46,7 +46,6 @@ fn assert_error(obj: Object, expected_msg: &str) {
     assert_eq!(msg, expected_msg);
 }
 
-// ─── Integer Arithmetic ───────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_integer_literal() {
@@ -94,7 +93,6 @@ fn test_eval_prefix_minus() {
     }
 }
 
-// ─── Boolean Expressions ─────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_boolean_literal() {
@@ -154,7 +152,6 @@ fn test_eval_boolean_comparisons() {
     }
 }
 
-// ─── If / Else ────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_if_expression_truthy() {
@@ -176,7 +173,6 @@ fn test_eval_if_expression_null_branch() {
     assert_null(eval("if (1 > 2) { 10 }"));
 }
 
-// ─── Return Statements ────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_return_statement() {
@@ -204,7 +200,6 @@ if (10 > 1) {
     assert_integer(eval(input), 10);
 }
 
-// ─── Let Statements & Identifiers ────────────────────────────────────────────
 
 #[test]
 fn test_eval_let_statement() {
@@ -224,7 +219,6 @@ fn test_eval_undefined_identifier() {
     assert_error(eval("foobar"), "identifier not found: foobar");
 }
 
-// ─── Strings ─────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_string_literal() {
@@ -244,7 +238,6 @@ fn test_eval_string_wrong_operator() {
     assert_error(eval(r#""a" * "b""#), "unknown operator: STRING * STRING");
 }
 
-// ─── Functions ────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_function_literal() {
@@ -317,7 +310,6 @@ fn test_eval_call_non_function() {
     assert_error(eval("let x = 5; x(1);"), "not a function: INTEGER");
 }
 
-// ─── Error Handling ───────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_type_mismatch_errors() {
@@ -354,7 +346,6 @@ fn test_eval_division_by_zero() {
     assert_error(eval("10 / 0"), "division by zero");
 }
 
-// ─── Builtins ─────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_log_returns_null() {
@@ -377,7 +368,6 @@ fn test_log_is_accessible_as_identifier() {
     assert!(matches!(result, Object::Builtin(_)), "Expected Builtin, got: {:?}", result);
 }
 
-// ─── Array Literals ───────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_array_literal() {
@@ -400,7 +390,6 @@ fn test_eval_empty_array() {
     assert_eq!(arr.elements.len(), 0);
 }
 
-// ─── Index Expressions ────────────────────────────────────────────────────────
 
 #[test]
 fn test_eval_array_index() {
@@ -430,7 +419,6 @@ fn test_eval_index_unsupported_type() {
     assert_error(eval("true[0]"), "index operator not supported: BOOLEAN");
 }
 
-// ─── Builtin: len ─────────────────────────────────────────────────────────────
 
 #[test]
 fn test_builtin_len_string() {
@@ -464,7 +452,6 @@ fn test_builtin_len_wrong_args() {
     assert_error(eval("len(true)"),     "argument to `len` not supported, got BOOLEAN");
 }
 
-// ─── Builtin: first ───────────────────────────────────────────────────────────
 
 #[test]
 fn test_builtin_first() {
@@ -480,7 +467,6 @@ fn test_builtin_first_wrong_args() {
     assert_error(eval("first(1)"),      "argument to `first` not supported, got INTEGER");
 }
 
-// ─── Builtin: last ────────────────────────────────────────────────────────────
 
 #[test]
 fn test_builtin_last() {
@@ -496,7 +482,6 @@ fn test_builtin_last_wrong_args() {
     assert_error(eval("last(1)"),       "argument to `last` not supported, got INTEGER");
 }
 
-// ─── Builtin: tail ────────────────────────────────────────────────────────────
 
 #[test]
 fn test_builtin_tail() {
@@ -530,7 +515,6 @@ fn test_builtin_tail_wrong_args() {
     assert_error(eval("tail(1)"),       "argument to `first` not supported, got INTEGER");
 }
 
-// ─── Builtin: push ────────────────────────────────────────────────────────────
 
 #[test]
 fn test_builtin_push() {
@@ -566,7 +550,6 @@ fn test_builtin_push_wrong_args() {
     assert_error(eval("push(1, 2)"),    "argument to `first` not supported, got INTEGER");
 }
 
-// ─── Higher-order / integration ───────────────────────────────────────────────
 
 #[test]
 fn test_builtin_map_with_closures() {

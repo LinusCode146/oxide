@@ -1,1 +1,16 @@
-[1, 2, 3, 4, 5][10-6]
+let map = fun (arr, f) {
+    let iter = fun(arr, accumulated) {
+        if len(arr) == 0 {
+            accumulated
+        } else {
+            iter(tail(arr), push(accumulated, f(first(arr))))
+        }
+    };
+
+    iter(arr, []);
+};
+
+let a = [1, 2, 3, 4];
+let double = fun(x) { 2 * x };
+
+log(map(a, double));

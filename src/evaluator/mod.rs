@@ -55,7 +55,7 @@ fn eval_statement(stmt: &Statement, env: &mut Environment) -> Object {
     }
 }
 
-fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
+pub fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
     match expr {
         Expression::IntegerLiteral(i) => Object::Integer(i.value),
         Expression::Boolean(b)        => Object::Boolean(b.value),
@@ -245,7 +245,7 @@ fn eval_integer_infix_expression(operator: &str, left: i64, right: i64) -> Objec
     }
 }
 
-fn eval_expressions(args: &[Box<Expression>], env: &mut Environment) -> Vec<Object> {
+pub fn eval_expressions(args: &[Box<Expression>], env: &mut Environment) -> Vec<Object> {
     let mut result = Vec::new();
     for arg in args {
         let evaluated = eval_expression(arg, env);

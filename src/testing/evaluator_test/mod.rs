@@ -334,7 +334,6 @@ fn test_eval_type_mismatch_errors() {
 
 #[test]
 fn test_eval_errors_stop_execution() {
-    // error in an if branch should still propagate and stop further evaluation
     let input = "
 if (10 > 1) {
     true + false;
@@ -376,4 +375,215 @@ fn test_log_no_args_returns_null() {
 fn test_log_is_accessible_as_identifier() {
     let result = eval("log");
     assert!(matches!(result, Object::Builtin(_)), "Expected Builtin, got: {:?}", result);
+}
+
+// ─── Array Literals ───────────────────────────────────────────────────────────
+
+#[test]
+fn test_eval_array_literal() {
+    let result = eval("[1, 2, 3]");
+    let Object::Array(arr) = result else {
+        panic!("Expected Array, got: {:?}", result);
+    };
+    assert_eq!(arr.elements.len(), 3);
+    assert_integer(arr.elements[0].clone(), 1);
+    assert_integer(arr.elements[1].clone(), 2);
+    assert_integer(arr.elements[2].clone(), 3);
+}
+
+#[test]
+fn test_eval_empty_array() {
+    let result = eval("[]");
+    let Object::Array(arr) = result else {
+        panic!("Expected Array, got: {:?}", result);
+    };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+// ─── Index Expressions ────────────────────────────────────────────────────────
+
+#[test]
+fn test_eval_array_index() {
+    let tests = vec![
+        ("[1, 2, 3][0]", 1i64),
+        ("[1, 2, 3][1]", 2),
+        ("[1, 2, 3][2]", 3),
+        ("let a = [1, 2, 3]; a[0]", 1),
+        ("let a = [1, 2, 3]; a[1 + 1]", 3),
+        ("[1, 2, 3][0 + 1]", 2),
+    ];
+    for (input, expected) in tests {
+        assert_integer(eval(input), expected);
+    }
+}
+
+#[test]
+fn test_eval_array_index_out_of_bounds() {
+    assert_null(eval("[1, 2, 3][99]"));
+    assert_null(eval("[1, 2, 3][-1]"));
+    assert_null(eval("[][0]"));
+}
+
+#[test]
+fn test_eval_index_unsupported_type() {
+    assert_error(eval("1[0]"), "index operator not supported: INTEGER");
+    assert_error(eval("true[0]"), "index operator not supported: BOOLEAN");
+}
+
+// ─── Builtin: len ─────────────────────────────────────────────────────────────
+
+#[test]
+fn test_builtin_len_string() {
+    let tests = vec![
+        (r#"len("")"#,          0i64),
+        (r#"len("hello")"#,     5),
+        (r#"len("hello world")"#, 11),
+    ];
+    for (input, expected) in tests {
+        assert_integer(eval(input), expected);
+    }
+}
+
+#[test]
+fn test_builtin_len_array() {
+    let tests = vec![
+        ("len([])",         0i64),
+        ("len([1, 2, 3])",  3),
+        ("len([1])",        1),
+    ];
+    for (input, expected) in tests {
+        assert_integer(eval(input), expected);
+    }
+}
+
+#[test]
+fn test_builtin_len_wrong_args() {
+    assert_error(eval("len()"),         "wrong number of arguments. got=0, want=1");
+    assert_error(eval("len(1, 2)"),     "wrong number of arguments. got=2, want=1");
+    assert_error(eval("len(1)"),        "argument to `len` not supported, got INTEGER");
+    assert_error(eval("len(true)"),     "argument to `len` not supported, got BOOLEAN");
+}
+
+// ─── Builtin: first ───────────────────────────────────────────────────────────
+
+#[test]
+fn test_builtin_first() {
+    assert_integer(eval("first([1, 2, 3])"), 1);
+    assert_integer(eval("first([42])"),      42);
+    assert_null(eval("first([])"));
+}
+
+#[test]
+fn test_builtin_first_wrong_args() {
+    assert_error(eval("first()"),       "wrong number of arguments. got=0, want=1");
+    assert_error(eval("first(1, 2)"),   "wrong number of arguments. got=2, want=1");
+    assert_error(eval("first(1)"),      "argument to `first` not supported, got INTEGER");
+}
+
+// ─── Builtin: last ────────────────────────────────────────────────────────────
+
+#[test]
+fn test_builtin_last() {
+    assert_integer(eval("last([1, 2, 3])"), 3);
+    assert_integer(eval("last([42])"),      42);
+    assert_null(eval("last([])"));
+}
+
+#[test]
+fn test_builtin_last_wrong_args() {
+    assert_error(eval("last()"),        "wrong number of arguments. got=0, want=1");
+    assert_error(eval("last(1, 2)"),    "wrong number of arguments. got=2, want=1");
+    assert_error(eval("last(1)"),       "argument to `last` not supported, got INTEGER");
+}
+
+// ─── Builtin: tail ────────────────────────────────────────────────────────────
+
+#[test]
+fn test_builtin_tail() {
+    let result = eval("tail([1, 2, 3])");
+    let Object::Array(arr) = result else {
+        panic!("Expected Array, got: {:?}", result);
+    };
+    assert_eq!(arr.elements.len(), 2);
+    assert_integer(arr.elements[0].clone(), 2);
+    assert_integer(arr.elements[1].clone(), 3);
+}
+
+#[test]
+fn test_builtin_tail_single_element() {
+    let result = eval("tail([1])");
+    let Object::Array(arr) = result else {
+        panic!("Expected Array, got: {:?}", result);
+    };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+#[test]
+fn test_builtin_tail_empty() {
+    assert_null(eval("tail([])"));
+}
+
+#[test]
+fn test_builtin_tail_wrong_args() {
+    assert_error(eval("tail()"),        "wrong number of arguments. got=0, want=1");
+    assert_error(eval("tail(1, 2)"),    "wrong number of arguments. got=2, want=1");
+    assert_error(eval("tail(1)"),       "argument to `first` not supported, got INTEGER");
+}
+
+// ─── Builtin: push ────────────────────────────────────────────────────────────
+
+#[test]
+fn test_builtin_push() {
+    let result = eval("push([1, 2], 3)");
+    let Object::Array(arr) = result else {
+        panic!("Expected Array, got: {:?}", result);
+    };
+    assert_eq!(arr.elements.len(), 3);
+    assert_integer(arr.elements[2].clone(), 3);
+}
+
+#[test]
+fn test_builtin_push_onto_empty() {
+    let result = eval("push([], 1)");
+    let Object::Array(arr) = result else {
+        panic!("Expected Array, got: {:?}", result);
+    };
+    assert_eq!(arr.elements.len(), 1);
+    assert_integer(arr.elements[0].clone(), 1);
+}
+
+#[test]
+fn test_builtin_push_does_not_mutate() {
+    // push should return a new array, original should be unchanged
+    let result = eval("let a = [1, 2]; let b = push(a, 3); len(a)");
+    assert_integer(result, 2);
+}
+
+#[test]
+fn test_builtin_push_wrong_args() {
+    assert_error(eval("push()"),        "wrong number of arguments. got=0, want=1");
+    assert_error(eval("push([])"),      "wrong number of arguments. got=1, want=1");
+    assert_error(eval("push(1, 2)"),    "argument to `first` not supported, got INTEGER");
+}
+
+// ─── Higher-order / integration ───────────────────────────────────────────────
+
+#[test]
+fn test_builtin_map_with_closures() {
+    let input = "
+let map = fun(arr, f) {
+    let iter = fun(arr, accumulated) {
+        if len(arr) == 0 {
+            accumulated
+        } else {
+            iter(tail(arr), push(accumulated, f(first(arr))));
+        }
+    };
+    iter(arr, []);
+};
+let double = fun(x) { 2 * x };
+let result = map([1, 2, 3], double);
+result[2]
+";
+    assert_integer(eval(input), 6);
 }

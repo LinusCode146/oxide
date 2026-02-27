@@ -3,6 +3,7 @@ use crate::object::Object;
 
 #[derive(Clone, Debug)]
 
+#[derive(PartialEq)]
 pub struct Environment {
     store: HashMap<String, Object>,
     outer: Option<Box<Environment>>,

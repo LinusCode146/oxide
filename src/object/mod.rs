@@ -6,11 +6,13 @@ use std::collections::HashMap;
 pub type BuiltinFn = fn(Vec<Object>) -> Object;
 
 #[derive(Clone, Debug)]
+#[derive(PartialEq)]
 pub struct HashObject {
     pub pairs: HashMap<HashKey, HashPair>,
 }
 
 #[derive(Clone, Debug)]
+#[derive(PartialEq)]
 pub struct HashPair {
     pub key: Object,
     pub value: Object,
@@ -48,12 +50,32 @@ pub enum Object {
     Hash(HashObject),
 }
 
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Object::Integer(a), Object::Integer(b))       => a == b,
+            (Object::Boolean(a), Object::Boolean(b))       => a == b,
+            (Object::StringObj(a), Object::StringObj(b))   => a == b,
+            (Object::ReturnValue(a), Object::ReturnValue(b)) => a == b,
+            (Object::Function(a), Object::Function(b))     => a == b,
+            (Object::Array(a), Object::Array(b))           => a == b,
+            (Object::Hash(a), Object::Hash(b))             => a == b,
+            (Object::Null, Object::Null)                   => true,
+            (Object::Error(a), Object::Error(b))           => a == b,
+            (Object::Builtin(_), Object::Builtin(_))       => false,
+            _                                              => false,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
+#[derive(PartialEq)]
 pub struct ArrayObject {
     pub elements: Vec<Object>
 }
 
 #[derive(Clone, Debug)]
+#[derive(PartialEq)]
 pub struct FunctionObject {
     pub parameters: Vec<Identifier>,
     pub name: Option<String>,

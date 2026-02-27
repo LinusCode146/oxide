@@ -1,3 +1,1 @@
-let names = { "Linus": 16, true: 18 };
-
-log(names[2!=1]);
+[1, 2] + [3, 4];

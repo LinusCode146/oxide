@@ -22,7 +22,7 @@ fn token_precedence(t: &TokenType) -> Precedence {
         TokenType::PLUS | TokenType::MINUS          => Precedence::Sum,
         TokenType::MUL | TokenType::DIV             => Precedence::Product,
         TokenType::LPAREN                           => Precedence::Call,
-        TokenType::LBRACKET                         => Precedence::Index,
+        TokenType::LBRACKET | TokenType::DOT                      => Precedence::Index,
         _                                           => Lowest,
     }
 }
@@ -219,7 +219,7 @@ impl Parser {
             Some(TokenType::PLUS  | TokenType::MINUS | TokenType::MUL  |
                  TokenType::DIV   | TokenType::EQ    | TokenType::NEQ  |
                  TokenType::LT    | TokenType::GT    | TokenType::LPAREN |
-                TokenType::LBRACKET )
+                TokenType::LBRACKET | TokenType::DOT )
         )
     }
 
@@ -441,11 +441,29 @@ impl Parser {
             TokenType::DIV   | TokenType::EQ    | TokenType::NEQ  |
             TokenType::LT    | TokenType::GT   => self.parse_infix_expression(left),
             TokenType::LBRACKET => self.parse_index_expression(left),
+            TokenType::DOT => self.parse_dot_expression(left),
             TokenType::LPAREN => self.parse_call_expression(left),
                 other => Err(ParseError::new(format!(
                 "No infix parse function for '{:?}' found!", other
             ))),
         }
+    }
+
+    fn parse_dot_expression(&mut self, left: Expression) -> Result<Expression, ParseError> {
+        let token = self.cur_token.clone(); // the '.' token
+        self.next_token(); // move to method name
+
+        let method_name = self.cur_token.get_literal();
+        let string_token = TokenType::STRING(method_name.clone());
+
+        Ok(Expression::Index(IndexExpression {
+            token,
+            left: Box::new(left),
+            index: Box::new(Expression::StringLiteral(StringLiteral {
+                token: string_token,
+                value: method_name,
+            })),
+        }))
     }
 
     fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParseError> {

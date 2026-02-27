@@ -135,16 +135,156 @@ pub fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
         }
 
         Expression::Call(call) => {
+            // Check for method call syntax: obj.method(args)
+            if let Expression::Index(ie) = call.function.as_ref() {
+                if let Expression::StringLiteral(method_name) = ie.index.as_ref() {
+                    let receiver = eval_expression(&ie.left, env);
+                    if receiver.is_error() { return receiver; }
+
+                    let args: Vec<Object> = call.arguments.iter()
+                        .map(|a| eval_expression(a, env))
+                        .collect();
+                    if args.iter().any(|a| a.is_error()) {
+                        return args.into_iter().find(|a| a.is_error()).unwrap();
+                    }
+
+                    return eval_method_call(receiver, &method_name.value, args);
+                }
+            }
+
+            // Normal function call
             let function = eval_expression(&call.function, env);
             if function.is_error() { return function; }
-
             let args = eval_expressions(&call.arguments, env);
             if args.len() == 1 && args[0].is_error() {
                 return args.into_iter().next().unwrap();
             }
-
             apply_function(function, args)
         }
+    }
+}
+
+fn eval_method_call(receiver: Object, method: &str, args: Vec<Object>) -> Object {
+    match &receiver {
+        Object::Array(_) => eval_array_method(receiver, method, args),
+        Object::StringObj(_) => eval_string_method(receiver, method, args),
+        other => Object::Error(format!(
+            "method '{}' not found on type {}", method, other.object_type()
+        )),
+    }
+}
+
+fn eval_array_method(receiver: Object, method: &str, args: Vec<Object>) -> Object {
+    let Object::Array(arr) = receiver else { unreachable!() };
+
+    match method {
+        "len" => {
+            if !args.is_empty() {
+                return Object::Error(format!("len() takes 0 arguments, got {}", args.len()));
+            }
+            Object::Integer(arr.elements.len() as i64)
+        }
+        "first" => {
+            if !args.is_empty() {
+                return Object::Error(format!("first() takes 0 arguments, got {}", args.len()));
+            }
+            arr.elements.first().cloned().unwrap_or(Object::Null)
+        }
+        "last" => {
+            if !args.is_empty() {
+                return Object::Error(format!("last() takes 0 arguments, got {}", args.len()));
+            }
+            arr.elements.last().cloned().unwrap_or(Object::Null)
+        }
+        "push" => {
+            if args.len() != 1 {
+                return Object::Error(format!("push() takes 1 argument, got {}", args.len()));
+            }
+            let mut new_elements = arr.elements.clone();
+            new_elements.push(args.into_iter().next().unwrap());
+            Object::Array(ArrayObject { elements: new_elements })
+        }
+        "tail" => {
+            if !args.is_empty() {
+                return Object::Error(format!("tail() takes 0 arguments, got {}", args.len()));
+            }
+            if arr.elements.is_empty() {
+                return Object::Null;
+            }
+            Object::Array(ArrayObject { elements: arr.elements[1..].to_vec() })
+        }
+        "pop" => {
+            if !args.is_empty() {
+                return Object::Error(format!("pop() takes 0 arguments, got {}", args.len()));
+            }
+            if arr.elements.is_empty() {
+                return Object::Null;
+            }
+            Object::Array(ArrayObject { elements: arr.elements[..(arr.elements.len() - 1)].to_vec() })
+        }
+        "filter" => {
+            if args.len() != 1 {
+                return Object::Error(format!("filter() takes 1 argument, got {}", args.len()));
+            }
+            let func = args.into_iter().next().unwrap();
+            let mut filtered = Vec::new();
+            for element in arr.elements {
+                let result = apply_function(func.clone(), vec![element.clone()]);
+                if result.is_error() {
+                    return result;
+                }
+                if result.is_truthy() {
+                    filtered.push(element);
+                }
+            }
+            Object::Array(ArrayObject { elements: filtered })
+        }
+        "filterNot" => {
+            if args.len() != 1 {
+                return Object::Error(format!("filter() takes 1 argument, got {}", args.len()));
+            }
+            let func = args.into_iter().next().unwrap();
+            let mut filtered = Vec::new();
+            for element in arr.elements {
+                let result = apply_function(func.clone(), vec![element.clone()]);
+                if result.is_error() {
+                    return result;
+                }
+                if !result.is_truthy() {
+                    filtered.push(element);
+                }
+            }
+            Object::Array(ArrayObject { elements: filtered })
+        }
+        "map" => {
+            if args.len() != 1 {
+                return Object::Error(format!("filter() takes 1 argument, got {}", args.len()));
+            }
+            let func = args.into_iter().next().unwrap();
+            let mut mapped = Vec::new();
+            for element in arr.elements {
+                let result = apply_function(func.clone(), vec![element.clone()]);
+                if result.is_error() {
+                    return result;
+                }mapped.push(result);
+            }
+            Object::Array(ArrayObject { elements: mapped })
+        }
+        other => Object::Error(format!("method '{}' not found on ARRAY", other)),
+    }
+}
+
+fn eval_string_method(receiver: Object, method: &str, args: Vec<Object>) -> Object {
+    let Object::StringObj(s) = receiver else { unreachable!() };
+
+    match method {
+        "len" => {
+            if !args.is_empty() {
+                return Object::Error(format!("len() takes 0 arguments, got {}", args.len()));
+            }
+            Object::Integer(s.len() as i64)
+        }
+        other => Object::Error(format!("method '{}' not found on STRING", other)),
     }
 }
 
@@ -228,6 +368,17 @@ fn eval_infix_expression(operator: &str, left: Object, right: Object) -> Object 
         (Object::Boolean(l), Object::Boolean(r)) => match operator {
             "==" => Object::Boolean(l == r),
             "!=" => Object::Boolean(l != r),
+            op   => Object::Error(format!(
+                "unknown operator: {} {} {}",
+                left.object_type(), op, right.object_type()
+            )),
+        },
+        (Object::Array(l), Object::Array(r)) => match operator {
+            "+" => Object::Array( ArrayObject {
+                elements: [l.elements.clone(), r.elements.clone()].concat(),
+            }),
+            "==" => Object::Boolean(l.elements == r.elements),
+            "!=" => Object::Boolean(l.elements != r.elements),
             op   => Object::Error(format!(
                 "unknown operator: {} {} {}",
                 left.object_type(), op, right.object_type()

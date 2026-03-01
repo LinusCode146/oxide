@@ -481,10 +481,8 @@ fn test_named_function_is_callable() {
     let program = parse("fun double(x) { x * 2; } double(5);");
     assert_eq!(program.statements.len(), 2);
 
-    // first statement is the named function definition
     assert!(matches!(program.statements[0], Statement::Let(_)));
 
-    // second is the call
     let Statement::Expression(stmt) = &program.statements[1] else {
         panic!("Expected ExpressionStatement");
     };
@@ -500,8 +498,7 @@ fn test_named_function_is_callable() {
 
 #[test]
 fn test_named_function_desugars_same_as_let() {
-    // fun add(a, b) { a + b; } should produce identical structure to
-    // let add = fun(a, b) { a + b; }
+
     let named   = parse("fun add(a, b) { a + b; }");
     let let_ver = parse("let add = fun(a, b) { a + b; }");
 

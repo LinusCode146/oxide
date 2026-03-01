@@ -337,7 +337,6 @@ if (10 > 1) {
 
 #[test]
 fn test_eval_unknown_prefix_operator() {
-    // '-' on a boolean
     assert_error(eval("-true"), "unknown operator: -BOOLEAN");
 }
 
@@ -538,7 +537,6 @@ fn test_builtin_push_onto_empty() {
 
 #[test]
 fn test_builtin_push_does_not_mutate() {
-    // push should return a new array, original should be unchanged
     let result = eval("let a = [1, 2]; let b = push(a, 3); len(a)");
     assert_integer(result, 2);
 }
@@ -673,7 +671,6 @@ fn test_eval_hash_index_unusable_key() {
     );
 }
 
-// ── len ──────────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_array_method_len() {
@@ -687,7 +684,6 @@ fn test_array_method_len_wrong_args() {
     assert_error(eval("[1, 2].len(1)"), "len() takes 0 arguments, got 1");
 }
 
-// ── first ─────────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_array_method_first() {
@@ -701,7 +697,6 @@ fn test_array_method_first_wrong_args() {
     assert_error(eval("[1].first(1)"), "first() takes 0 arguments, got 1");
 }
 
-// ── last ──────────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_array_method_last() {
@@ -715,7 +710,7 @@ fn test_array_method_last_wrong_args() {
     assert_error(eval("[1].last(1)"), "last() takes 0 arguments, got 1");
 }
 
-// ── push ──────────────────────────────────────────────────────────────────────
+
 
 #[test]
 fn test_array_method_push() {
@@ -744,7 +739,6 @@ fn test_array_method_push_wrong_args() {
     assert_error(eval("[1].push(1, 2)"), "push() takes 1 argument, got 2");
 }
 
-// ── tail ──────────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_array_method_tail() {
@@ -772,7 +766,6 @@ fn test_array_method_tail_wrong_args() {
     assert_error(eval("[1].tail(1)"), "tail() takes 0 arguments, got 1");
 }
 
-// ── pop ───────────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_array_method_pop() {
@@ -805,7 +798,7 @@ fn test_array_method_pop_wrong_args() {
     assert_error(eval("[1].pop(1)"), "pop() takes 0 arguments, got 1");
 }
 
-// ── filter ────────────────────────────────────────────────────────────────────
+
 
 #[test]
 fn test_array_method_filter() {
@@ -843,7 +836,6 @@ fn test_array_method_filter_wrong_args() {
     assert_error(eval("[1].filter(fun(x){x}, fun(x){x})"), "filter() takes 1 argument, got 2");
 }
 
-// ── filterNot ─────────────────────────────────────────────────────────────────
 
 #[test]
 fn test_array_method_filter_not() {
@@ -861,7 +853,7 @@ fn test_array_method_filter_not_empty() {
     assert_eq!(arr.elements.len(), 0);
 }
 
-// ── map ───────────────────────────────────────────────────────────────────────
+
 
 #[test]
 fn test_array_method_map() {

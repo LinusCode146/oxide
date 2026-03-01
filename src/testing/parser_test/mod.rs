@@ -421,3 +421,101 @@ fn test_call_expression_string_representation() {
         assert_eq!(program.string().trim(), expected, "input: {}", input);
     }
 }
+
+
+#[test]
+fn test_named_function_statement() {
+    let program = parse("fun double(x) { x * 2; }");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Let(let_stmt) = &program.statements[0] else {
+        panic!("Expected LetStatement for named function");
+    };
+    assert_eq!(let_stmt.name.value, "double");
+
+    let Expression::FunctionLiteral(func) = &let_stmt.value else {
+        panic!("Expected FunctionLiteral as value");
+    };
+    assert_eq!(func.parameters.len(), 1);
+    assert_eq!(func.parameters[0].value, "x");
+
+    assert_eq!(func.body.statements.len(), 1);
+}
+
+#[test]
+fn test_named_function_statement_multiple_params() {
+    let program = parse("fun add(a, b) { a + b; }");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Let(let_stmt) = &program.statements[0] else {
+        panic!("Expected LetStatement");
+    };
+    assert_eq!(let_stmt.name.value, "add");
+
+    let Expression::FunctionLiteral(func) = &let_stmt.value else {
+        panic!("Expected FunctionLiteral");
+    };
+    assert_eq!(func.parameters.len(), 2);
+    assert_eq!(func.parameters[0].value, "a");
+    assert_eq!(func.parameters[1].value, "b");
+}
+
+#[test]
+fn test_named_function_statement_no_params() {
+    let program = parse("fun greet() { 42; }");
+    assert_eq!(program.statements.len(), 1);
+
+    let Statement::Let(let_stmt) = &program.statements[0] else {
+        panic!("Expected LetStatement");
+    };
+    assert_eq!(let_stmt.name.value, "greet");
+
+    let Expression::FunctionLiteral(func) = &let_stmt.value else {
+        panic!("Expected FunctionLiteral");
+    };
+    assert_eq!(func.parameters.len(), 0);
+}
+
+#[test]
+fn test_named_function_is_callable() {
+    let program = parse("fun double(x) { x * 2; } double(5);");
+    assert_eq!(program.statements.len(), 2);
+
+    // first statement is the named function definition
+    assert!(matches!(program.statements[0], Statement::Let(_)));
+
+    // second is the call
+    let Statement::Expression(stmt) = &program.statements[1] else {
+        panic!("Expected ExpressionStatement");
+    };
+    let Expression::Call(call) = &stmt.expression else {
+        panic!("Expected CallExpression");
+    };
+    let Expression::Identifier(func) = call.function.as_ref() else {
+        panic!("Expected Identifier as function");
+    };
+    assert_eq!(func.value, "double");
+    assert_eq!(call.arguments.len(), 1);
+}
+
+#[test]
+fn test_named_function_desugars_same_as_let() {
+    // fun add(a, b) { a + b; } should produce identical structure to
+    // let add = fun(a, b) { a + b; }
+    let named   = parse("fun add(a, b) { a + b; }");
+    let let_ver = parse("let add = fun(a, b) { a + b; }");
+
+    let Statement::Let(named_let) = &named.statements[0] else { panic!() };
+    let Statement::Let(let_let)   = &let_ver.statements[0] else { panic!() };
+
+    assert_eq!(named_let.name.value, let_let.name.value);
+
+    let Expression::FunctionLiteral(named_func) = &named_let.value else { panic!() };
+    let Expression::FunctionLiteral(let_func)   = &let_let.value   else { panic!() };
+
+    assert_eq!(named_func.parameters.len(), let_func.parameters.len());
+    for (a, b) in named_func.parameters.iter().zip(let_func.parameters.iter()) {
+        assert_eq!(a.value, b.value);
+    }
+    assert_eq!(named_func.body.statements.len(), let_func.body.statements.len());
+}

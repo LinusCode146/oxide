@@ -142,8 +142,38 @@ impl Parser {
         match self.cur_token {
             TokenType::LET    => self.parse_let_statement().map(Statement::Let),
             TokenType::RETURN => self.parse_return_statement().map(Statement::Return),
-            _                 => self.parse_expression_statement().map(Statement::Expression),
+            TokenType::FUNCTION if self.peek_token_is(&TokenType::IDENT(String::new())) => {
+                self.parse_named_function_statement().map(Statement::Let)
+            }
+            _ => self.parse_expression_statement().map(Statement::Expression),
         }
+    }
+
+    fn parse_named_function_statement(&mut self) -> Result<LetStatement, ParseError> {
+        let fun_token = self.cur_token.clone();
+        self.next_token();
+
+        let name = Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.get_literal(),
+        };
+
+        self.expect_peek(TokenType::LPAREN)?;
+        let parameters = self.parse_function_parameters()?;
+        self.expect_peek(TokenType::LBRACE)?;
+        let body = self.parse_block_statement();
+
+        let value = Expression::FunctionLiteral(FunctionLiteral {
+            token: fun_token.clone(),
+            parameters,
+            body,
+        });
+
+        if self.peek_token_is(&TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Ok(LetStatement { token: fun_token, name, value })
     }
 
     fn parse_let_statement(&mut self) -> Result<LetStatement, ParseError> {

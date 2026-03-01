@@ -672,3 +672,233 @@ fn test_eval_hash_index_unusable_key() {
         "unusable as hash key: ARRAY",
     );
 }
+
+// ── len ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_len() {
+    assert_integer(eval("[1, 2, 3].len()"), 3);
+    assert_integer(eval("[].len()"), 0);
+    assert_integer(eval("[42].len()"), 1);
+}
+
+#[test]
+fn test_array_method_len_wrong_args() {
+    assert_error(eval("[1, 2].len(1)"), "len() takes 0 arguments, got 1");
+}
+
+// ── first ─────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_first() {
+    assert_integer(eval("[1, 2, 3].first()"), 1);
+    assert_integer(eval("[42].first()"), 42);
+    assert_null(eval("[].first()"));
+}
+
+#[test]
+fn test_array_method_first_wrong_args() {
+    assert_error(eval("[1].first(1)"), "first() takes 0 arguments, got 1");
+}
+
+// ── last ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_last() {
+    assert_integer(eval("[1, 2, 3].last()"), 3);
+    assert_integer(eval("[42].last()"), 42);
+    assert_null(eval("[].last()"));
+}
+
+#[test]
+fn test_array_method_last_wrong_args() {
+    assert_error(eval("[1].last(1)"), "last() takes 0 arguments, got 1");
+}
+
+// ── push ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_push() {
+    let result = eval("[1, 2].push(3)");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 3);
+    assert_integer(arr.elements[2].clone(), 3);
+}
+
+#[test]
+fn test_array_method_push_onto_empty() {
+    let result = eval("[].push(1)");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 1);
+    assert_integer(arr.elements[0].clone(), 1);
+}
+
+#[test]
+fn test_array_method_push_does_not_mutate() {
+    assert_integer(eval("let a = [1, 2]; a.push(3); a.len()"), 2);
+}
+
+#[test]
+fn test_array_method_push_wrong_args() {
+    assert_error(eval("[1].push()"), "push() takes 1 argument, got 0");
+    assert_error(eval("[1].push(1, 2)"), "push() takes 1 argument, got 2");
+}
+
+// ── tail ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_tail() {
+    let result = eval("[1, 2, 3].tail()");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 2);
+    assert_integer(arr.elements[0].clone(), 2);
+    assert_integer(arr.elements[1].clone(), 3);
+}
+
+#[test]
+fn test_array_method_tail_single_element() {
+    let result = eval("[1].tail()");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+#[test]
+fn test_array_method_tail_empty() {
+    assert_null(eval("[].tail()"));
+}
+
+#[test]
+fn test_array_method_tail_wrong_args() {
+    assert_error(eval("[1].tail(1)"), "tail() takes 0 arguments, got 1");
+}
+
+// ── pop ───────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_pop() {
+    let result = eval("[1, 2, 3].pop()");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 2);
+    assert_integer(arr.elements[0].clone(), 1);
+    assert_integer(arr.elements[1].clone(), 2);
+}
+
+#[test]
+fn test_array_method_pop_single_element() {
+    let result = eval("[1].pop()");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+#[test]
+fn test_array_method_pop_empty() {
+    assert_null(eval("[].pop()"));
+}
+
+#[test]
+fn test_array_method_pop_does_not_mutate() {
+    assert_integer(eval("let a = [1, 2, 3]; a.pop(); a.len()"), 3);
+}
+
+#[test]
+fn test_array_method_pop_wrong_args() {
+    assert_error(eval("[1].pop(1)"), "pop() takes 0 arguments, got 1");
+}
+
+// ── filter ────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_filter() {
+    let result = eval("[1, 2, 3, 4].filter(fun(x) { x > 2 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 2);
+    assert_integer(arr.elements[0].clone(), 3);
+    assert_integer(arr.elements[1].clone(), 4);
+}
+
+#[test]
+fn test_array_method_filter_none_match() {
+    let result = eval("[1, 2, 3].filter(fun(x) { x > 99 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+#[test]
+fn test_array_method_filter_all_match() {
+    let result = eval("[1, 2, 3].filter(fun(x) { x > 0 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 3);
+}
+
+#[test]
+fn test_array_method_filter_empty() {
+    let result = eval("[].filter(fun(x) { x > 0 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+#[test]
+fn test_array_method_filter_wrong_args() {
+    assert_error(eval("[1].filter()"), "filter() takes 1 argument, got 0");
+    assert_error(eval("[1].filter(fun(x){x}, fun(x){x})"), "filter() takes 1 argument, got 2");
+}
+
+// ── filterNot ─────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_filter_not() {
+    let result = eval("[1, 2, 3, 4].filterNot(fun(x) { x > 2 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 2);
+    assert_integer(arr.elements[0].clone(), 1);
+    assert_integer(arr.elements[1].clone(), 2);
+}
+
+#[test]
+fn test_array_method_filter_not_empty() {
+    let result = eval("[].filterNot(fun(x) { x > 0 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+// ── map ───────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_array_method_map() {
+    let result = eval("[1, 2, 3].map(fun(x) { x * 2 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 3);
+    assert_integer(arr.elements[0].clone(), 2);
+    assert_integer(arr.elements[1].clone(), 4);
+    assert_integer(arr.elements[2].clone(), 6);
+}
+
+#[test]
+fn test_array_method_map_empty() {
+    let result = eval("[].map(fun(x) { x * 2 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 0);
+}
+
+#[test]
+fn test_array_method_map_to_strings() {
+    let result = eval(r#"[1, 2, 3].map(fun(x) { "item" })"#);
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 3);
+    assert_string(arr.elements[0].clone(), "item");
+}
+
+#[test]
+fn test_array_method_map_chained_with_filter() {
+    let result = eval("[1, 2, 3, 4].filter(fun(x) { x > 2 }).map(fun(x) { x * 10 })");
+    let Object::Array(arr) = result else { panic!("Expected Array") };
+    assert_eq!(arr.elements.len(), 2);
+    assert_integer(arr.elements[0].clone(), 30);
+    assert_integer(arr.elements[1].clone(), 40);
+}
+
+#[test]
+fn test_array_method_map_wrong_args() {
+    assert_error(eval("[1].map()"), "map() takes 1 argument, got 0");
+    assert_error(eval("[1].map(fun(x){x}, fun(x){x})"), "map() takes 1 argument, got 2");
+}

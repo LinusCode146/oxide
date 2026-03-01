@@ -241,7 +241,7 @@ fn eval_array_method(receiver: Object, method: &str, args: Vec<Object>) -> Objec
         }
         "filterNot" => {
             if args.len() != 1 {
-                return Object::Error(format!("filter() takes 1 argument, got {}", args.len()));
+                return Object::Error(format!("filterNot() takes 1 argument, got {}", args.len()));
             }
             let func = args.into_iter().next().unwrap();
             let mut filtered = Vec::new();
@@ -258,7 +258,7 @@ fn eval_array_method(receiver: Object, method: &str, args: Vec<Object>) -> Objec
         }
         "map" => {
             if args.len() != 1 {
-                return Object::Error(format!("filter() takes 1 argument, got {}", args.len()));
+                return Object::Error(format!("map() takes 1 argument, got {}", args.len()));
             }
             let func = args.into_iter().next().unwrap();
             let mut mapped = Vec::new();

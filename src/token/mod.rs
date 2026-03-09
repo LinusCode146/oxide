@@ -38,7 +38,8 @@ pub enum TokenType {
     FALSE,
     IF,
     ELSE,
-    RETURN
+    RETURN,
+    WHILE
 }
 
 impl TokenType {
@@ -78,6 +79,7 @@ impl TokenType {
             TokenType::IF => String::from("if"),
             TokenType::ELSE => String::from("else"),
             TokenType::RETURN => String::from("return"),
+            TokenType::WHILE => String::from("while"),
         }
     }
 }
@@ -91,6 +93,7 @@ pub fn lookup_keyword(ident: &str) -> TokenType {
         ("if", TokenType::IF),
         ("else", TokenType::ELSE),
         ("return", TokenType::RETURN),
+        ("while", TokenType::WHILE),
     ]);
     keywords.get(ident).cloned().unwrap_or(TokenType::IDENT(ident.to_string()))
 }

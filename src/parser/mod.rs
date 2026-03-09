@@ -1,6 +1,6 @@
 use crate::lexer::Lexer;
 use crate::token::TokenType;
-use crate::ast::{ArrayLiteral, BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement, StringLiteral};
+use crate::ast::{ArrayLiteral, AssignStatement, BlockStatement, BooleanLiteral, CallExpression, Expression, ExpressionStatement, FunctionLiteral, HashLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression, Program, ReturnStatement, Statement, StringLiteral, WhileExpression};
 use crate::parser::Precedence::Lowest;
 
 #[derive(PartialOrd, PartialEq, Clone, Copy)]
@@ -145,8 +145,28 @@ impl Parser {
             TokenType::FUNCTION if self.peek_token_is(&TokenType::IDENT(String::new())) => {
                 self.parse_named_function_statement().map(Statement::Let)
             }
+            TokenType::IDENT(_) if self.peek_token_is(&TokenType::ASSIGN) => {
+                self.parse_assign_statement().map(Statement::Assign)
+            }
             _ => self.parse_expression_statement().map(Statement::Expression),
         }
+    }
+
+    fn parse_assign_statement(&mut self) -> Result<AssignStatement, ParseError> {
+        let name = Identifier {
+            token: self.cur_token.clone(),
+            value: self.cur_token.get_literal(),
+        };
+        self.next_token(); // move past ident to `=`
+        self.next_token(); // move past `=` to value
+
+        let value = self.parse_expression(Lowest)?;
+
+        if self.peek_token_is(&TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Ok(AssignStatement { token: name.token.clone(), name, value })
     }
 
     fn parse_named_function_statement(&mut self) -> Result<LetStatement, ParseError> {
@@ -274,6 +294,7 @@ impl Parser {
             | TokenType::MINUS   => self.parse_prefix_expression(),
             TokenType::LPAREN    => self.parse_grouped_expression(),
             TokenType::IF        => self.parse_if_expression(),
+            TokenType::WHILE        => self.parse_while_expression(),
             TokenType::FUNCTION  => self.parse_function_literal(),
             TokenType::STRING(_) => self.parse_string_literal(),
             TokenType::LBRACKET  => self.parse_array_literal(),
@@ -445,6 +466,22 @@ impl Parser {
             condition: Box::new(condition),
             consequence,
             alternative,
+        }))
+    }
+
+    fn parse_while_expression(&mut self) -> Result<Expression, ParseError> {
+        let token = self.cur_token.clone();
+
+        self.next_token();
+        let condition = self.parse_expression(Lowest)?;
+        self.expect_peek(TokenType::LBRACE)?;
+        let body = self.parse_block_statement();
+
+
+        Ok(Expression::WhileLoop(WhileExpression {
+            token,
+            condition: Box::new(condition),
+            body,
         }))
     }
 

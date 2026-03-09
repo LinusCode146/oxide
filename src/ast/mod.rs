@@ -12,6 +12,7 @@ pub enum Statement {
     Return(ReturnStatement),
     Expression(ExpressionStatement),
     Block(BlockStatement),
+    Assign(AssignStatement)
 }
 
 impl Node for Statement {
@@ -21,6 +22,7 @@ impl Node for Statement {
             Statement::Return(s)     => s.token_literal(),
             Statement::Expression(s) => s.token_literal(),
             Statement::Block(s)      => s.token_literal(),
+            Statement::Assign(a) => a.token_literal(),
         }
     }
     fn string(&self) -> String {
@@ -29,6 +31,7 @@ impl Node for Statement {
             Statement::Return(s)     => s.string(),
             Statement::Expression(s) => s.string(),
             Statement::Block(s)      => s.string(),
+            Statement::Assign(s)      => s.string(),
         }
     }
 }
@@ -47,6 +50,7 @@ pub enum Expression {
     ArrayLiteral(ArrayLiteral),
     Index(IndexExpression),
     HashLiteral(HashLiteral),
+    WhileLoop(WhileExpression)
 }
 
 impl Node for Expression {
@@ -64,6 +68,7 @@ impl Node for Expression {
             Expression::ArrayLiteral(a) => a.token_literal(),
             Expression::Index(i  ) => i.token_literal(),
             Expression::HashLiteral(i  ) => i.token_literal(),
+            Expression::WhileLoop(w ) => w.token_literal(),
         }
     }
     fn string(&self) -> String {
@@ -80,6 +85,7 @@ impl Node for Expression {
             Expression::ArrayLiteral(e) => e.string(),
             Expression::Index(i  ) => i.string(),
             Expression::HashLiteral(i  ) => i.string(),
+            Expression::WhileLoop(i  ) => i.string(),
         }
     }
 }
@@ -110,6 +116,21 @@ impl Node for LetStatement {
         format!("{} {} = {};", self.token_literal(), self.name.string(), self.value.string())
     }
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct WhileExpression {
+    pub token: TokenType,
+    pub condition: Box<Expression>,
+    pub body: BlockStatement,
+}
+
+impl Node for WhileExpression {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        format!("while {} {{ {} }}", self.condition.string(), self.body.string())
+    }
+}
+
 #[derive(Clone, Debug)]
 #[derive(PartialEq)]
 pub struct ReturnStatement {
@@ -340,5 +361,19 @@ impl Node for IfExpression {
             out.push_str(&format!(" else {{ {} }}", alt.string()));
         }
         out
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AssignStatement {
+    pub token: TokenType,
+    pub name: Identifier,
+    pub value: Expression,
+}
+
+impl Node for AssignStatement {
+    fn token_literal(&self) -> String { self.token.get_literal() }
+    fn string(&self) -> String {
+        format!("{} = {};", self.name.string(), self.value.string())
     }
 }

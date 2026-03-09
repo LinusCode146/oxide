@@ -30,6 +30,16 @@ fn eval_statement(stmt: &Statement, env: &mut Environment) -> Object {
             Object::ReturnValue(Box::new(val))
         }
 
+        Statement::Assign(as_) => {
+            let val = eval_expression(&as_.value, env);
+            if val.is_error() { return val; }
+            if env.get(&as_.name.value).is_none() {
+                return Object::Error(format!("identifier not found: {}", as_.name.value));
+            }
+            env.set(as_.name.value.clone(), val);
+            Object::Null
+        }
+
         Statement::Let(ls) => {
             let mut val = eval_expression(&ls.value, env);
             if val.is_error() { return val; }
@@ -63,6 +73,21 @@ pub fn eval_expression(expr: &Expression, env: &mut Environment) -> Object {
         Expression::StringLiteral(s) => Object::StringObj(s.value.clone()),
 
         Expression::Identifier(id) => eval_identifier(&id.value, env),
+
+        Expression::WhileLoop(w ) => {
+            loop {
+                let condition = eval_expression(&w.condition, env);
+                if condition.is_error() { return condition; }
+                if !condition.is_truthy() { break; }
+
+                let result = eval_block_statement(&w.body, env);
+                match result {
+                    Object::Error(_) => return result,
+                    _ => {}
+                }
+            }
+            Object::Null
+        }
 
         Expression::HashLiteral(hl) => {
             let mut pairs = HashMap::new();

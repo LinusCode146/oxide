@@ -1,7 +1,2 @@
-fun double (a, b) {
-    a + b;
-}
-
-
-let result = double(12, 23);
-log(result);
+let five == 5 * 25;
+five

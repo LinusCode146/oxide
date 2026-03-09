@@ -30,8 +30,14 @@ impl Environment {
         })
     }
 
-    pub fn set(&mut self, name: String, value: Object) -> &Object {
-        self.store.entry(name).or_insert(value)
+    pub fn set(&mut self, name: String, value: Object) {
+        if self.store.contains_key(&name) {
+            self.store.insert(name, value);
+        } else if let Some(outer) = self.outer.as_mut() {
+            outer.set(name, value);
+        } else {
+            self.store.insert(name, value);
+        }
     }
 }
 
